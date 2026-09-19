@@ -47,6 +47,27 @@ final class PreferMultibyteSniff implements Sniff
     ];
 
     /**
+     * Variable-name substrings suggesting binary data - a match on the
+     * first argument suppresses the warning entirely (never autofixed
+     * either way; see the class docblock for why).
+     */
+    private const array NAME_HINTS = [
+        'binary',
+        'blob',
+        'bytes',
+        'raw',
+        'hash',
+        'digest',
+        'checksum',
+        'signature',
+        'ciphertext',
+        'plaintext',
+        'salt',
+        'iv',
+        'key',
+    ];
+
+    /**
      * Registers the tokens that this sniff wants to listen for.
      *
      * An example return value for a sniff that wants to listen for whitespace
@@ -120,6 +141,10 @@ final class PreferMultibyteSniff implements Sniff
             return;
         }
 
+        if ($this->firstArgumentLooksBinary($phpcsFile, $open_parenthesis)) {
+            return;
+        }
+
         /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
         $phpcsFile->addWarning(
             'Consider %s() instead of %s(), unless this is deliberately operating on binary/single-byte data.',
@@ -127,5 +152,26 @@ final class PreferMultibyteSniff implements Sniff
             'PreferMultibyte',
             [self::MAP[$function_name], $function_name],
         );
+    }
+
+    /**
+     * @param \PHP_CodeSniffer\Files\File $phpcsFile
+     * @param int                         $openParen
+     *
+     * @return bool
+     */
+    private function firstArgumentLooksBinary(File $phpcsFile, int $openParen): bool
+    {
+        $tokens = $phpcsFile->getTokens();
+
+        $first_arg_ptr = $phpcsFile->findNext(\T_WHITESPACE, $openParen + 1, null, true);
+        if ($first_arg_ptr === false || $tokens[$first_arg_ptr]['code'] !== \T_VARIABLE) {
+            return false;
+        }
+
+        $name = \mb_strtolower($tokens[$first_arg_ptr]['content'], 'UTF-8');
+
+        return array_any(self::NAME_HINTS, fn($hint) => str_contains($name, $hint));
+
     }
 }

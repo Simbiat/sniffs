@@ -12,6 +12,7 @@
 /** @noinspection PhpMissingDocCommentInspection, PhpUndefinedVariableInspection, PhpUndefinedClassInspection */
 /** @noinspection UnusedFunctionResultInspection, PhpExpressionResultUnusedInspection, AutoloadingIssuesInspection */
 /** @noinspection PhpUnreachableStatementInspection, PhpIllegalPsrClassPathInspection, SqlResolveInspection */
+/** @noinspection CompositionAndInheritanceInspection */
 
 declare(strict_types=1);
 
@@ -81,6 +82,22 @@ substr_count($haystack, $needle);
 trim($str);
 ucfirst($str);
 
+// Should not be flagged due to argument names
+
+strlen($binary);
+strlen($blob);
+strlen($bytes);
+strlen($raw);
+strlen($hash);
+strlen($digest);
+strlen($checksum);
+strlen($signature);
+strlen($ciphertext);
+strlen($plaintext);
+strlen($salt);
+strlen($iv);
+strlen($key);
+
 // Should NOT be flagged (method call / different class, not the global function).
 $variable_h = $obj->strlen($str);
 
@@ -91,24 +108,3 @@ class Foo
         return 0;
     }
 }
-
-// Should be flagged + auto-fixable (missing exit code).
-exit();
-die();
-if (true) {
-    exit;
-}
-
-// Should NOT be flagged (exit code present).
-exit(1);
-
-// Should be flagged, never auto-fixable.
-$fn = new TwigFunction('foo', $callable, ['is_safe' => ['html']]);
-
-// Should NOT be flagged (no `is_safe` key).
-$fn2 = new TwigFunction('bar', $callable, ['needs_environment' => true]);
-
-// Should be flagged (SQL patterns in string literals).
-$sql1 = 'SELECT UTC_TIMESTAMP() AS `test` FROM dual';
-$sql2 = 'UPDATE `table` SET `updated_at` = CURRENT_TIMESTAMP WHERE `id`=1;';
-$sql3 = 'UPDATE `table` SET `updated_at` = CURRENT_TIMESTAMP(6) WHERE `id`=1;';
