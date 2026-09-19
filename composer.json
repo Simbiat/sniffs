@@ -1,0 +1,36 @@
+{
+    "name": "simbiat/sniffs",
+    "type": "library",
+    "keywords": [
+        "php",
+        "sat",
+        "sniff",
+        "sniffer",
+        "phpcs"
+    ],
+    "description": "Custom sniffs for PHP Code Sniffer",
+    "homepage": "https://github.com/Simbiat/sniffs",
+    "license": "AGPL-3.0-or-later",
+    "authors": [
+        {
+            "name": "Dmitrii Kustov",
+            "email": "support@simbiat.eu",
+            "homepage": "https://www.simbiat.eu",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^8.4",
+        "ext-mbstring": "*",
+        "squizlabs/php_codesniffer": "^4.0.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "\\": ""
+        }
+    },
+    "support": {
+        "issues": "https://github.com/Simbiat/sniffs/issues",
+        "source": "https://github.com/Simbiat/sniffs"
+    }
+}

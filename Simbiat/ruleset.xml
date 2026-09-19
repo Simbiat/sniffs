@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<ruleset name="Simbiat">
+    <description>Custom sniffs migrated used in simbiat.eu project.</description>
+
+    <rule ref="Simbiat.Strings.MultibyteEncoding"/>
+    <rule ref="Simbiat.Strings.PreferMultibyte"/>
+    <rule ref="Simbiat.PHP.ExitCode"/>
+    <rule ref="Simbiat.PHP.PreferWhiteString"/>
+    <rule ref="Simbiat.Twig.SafeFilterOption"/>
+    <rule ref="Simbiat.SQL.DateTimeFunctions"/>
+    <rule ref="Simbiat.Regex.MissingUnicodeFlag"/>
+    <rule ref="Simbiat.Regex.MissingCaselessRestrictFlag"/>
+</ruleset>
