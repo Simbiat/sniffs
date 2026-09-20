@@ -18,10 +18,9 @@ use Simbiat\Sniffs\Strings\CallHelper;
  * worth a human confirming whiteString()'s behavior matches what the
  * call site actually needs before swapping it in.
  *
- * Only matches a literal, single-quoted pattern of exactly /^\s*$/ plus
- * optional flags from `imsxeADSUXJu` (same restriction as the original
- * rule) - a double-quoted pattern or a differently-shaped one is left
- * alone.
+ * Only matches a literal pattern of exactly /^\s*$/ or /^\s+$/, single- or
+ * double-quoted, plus optional flags from `imsxeADSUXJur` - a differently-
+ * shaped core pattern is left alone.
  *
  * Ported from the "Prefer `whiteString()`" rule.
  */
@@ -47,6 +46,7 @@ final class PreferWhiteStringSniff implements Sniff
      * </code>
      *
      * @return array<int|string>
+     *
      * @see    Tokens.php
      */
     public function register(): array
@@ -101,19 +101,25 @@ final class PreferWhiteStringSniff implements Sniff
         }
 
         $open_parenthesis = $phpcsFile->findNext(\T_WHITESPACE, $stackPtr + 1, null, true);
-        if ($open_parenthesis === false || $tokens[$open_parenthesis]['code'] !== \T_OPEN_PARENTHESIS) {
+        if (
+            $open_parenthesis === false
+            || $tokens[$open_parenthesis]['code'] !== \T_OPEN_PARENTHESIS
+        ) {
             return;
         }
 
         $close_parenthesis = $tokens[$open_parenthesis]['parenthesis_closer'];
 
         $pattern_ptr = $phpcsFile->findNext(\T_WHITESPACE, $open_parenthesis + 1, $close_parenthesis, true);
-        if ($pattern_ptr === false || $tokens[$pattern_ptr]['code'] !== \T_CONSTANT_ENCAPSED_STRING) {
+        if (
+            $pattern_ptr === false
+            || $tokens[$pattern_ptr]['code'] !== \T_CONSTANT_ENCAPSED_STRING
+        ) {
             return;
         }
 
         $pattern_content = $tokens[$pattern_ptr]['content'];
-        if ($pattern_content[0] !== "'" || !$this->isWhitespaceOnlyPattern($pattern_content)) {
+        if (!$this->isWhitespaceOnlyPattern($pattern_content)) {
             return;
         }
 
@@ -132,11 +138,18 @@ final class PreferWhiteStringSniff implements Sniff
 
         // Comparison operator right after the call: === 1 or !== 1.
         $after_call = $phpcsFile->findNext(\T_WHITESPACE, $close_parenthesis + 1, null, true);
-        if ($after_call === false || !\in_array($tokens[$after_call]['code'], [\T_IS_IDENTICAL, \T_IS_NOT_IDENTICAL], true)) {
+        if (
+            $after_call === false
+            || !\in_array($tokens[$after_call]['code'], [\T_IS_IDENTICAL, \T_IS_NOT_IDENTICAL], true)
+        ) {
             return;
         }
         $one_ptr = $phpcsFile->findNext(\T_WHITESPACE, $after_call + 1, null, true);
-        if ($one_ptr === false || $tokens[$one_ptr]['code'] !== \T_LNUMBER || $tokens[$one_ptr]['content'] !== '1') {
+        if (
+            $one_ptr === false
+            || $tokens[$one_ptr]['code'] !== \T_LNUMBER
+            || $tokens[$one_ptr]['content'] !== '1'
+        ) {
             return;
         }
 
@@ -152,19 +165,28 @@ final class PreferWhiteStringSniff implements Sniff
     }
 
     /**
-     * Content is the raw token text, quotes included, e.g. '/^\s*$/ui'.
-     * True only for a single-quoted /^\s*$/ pattern with flags drawn
-     * exclusively from ALLOWED_FLAGS.
+     * Content is the raw token text, quotes included, e.g. '/^\s*$/ui' or
+     * "/^\s+$/". True for either quote style, and for either /^\s*$/ or
+     * /^\s+$/ as the pattern core, with flags drawn exclusively from
+     * ALLOWED_FLAGS.
      */
     private function isWhitespaceOnlyPattern(string $content): bool
     {
-        $inner = \mb_substr($content, 1, -1, 'UTF-8'); // strip the surrounding '...'
+        $inner = \mb_substr($content, 1, -1, 'UTF-8'); // strip the surrounding quote char
 
-        if (!str_starts_with($inner, '/^\s*$/')) {
+        $core = null;
+        foreach (['/^\s*$/', '/^\s+$/'] as $candidate) {
+            if (str_starts_with($inner, $candidate)) {
+                $core = $candidate;
+                break;
+            }
+        }
+
+        if ($core === null) {
             return false;
         }
 
-        $flags = \mb_substr($inner, \mb_strlen('/^\s*$/', 'UTF-8'), null, 'UTF-8');
+        $flags = \mb_substr($inner, \mb_strlen($core, 'UTF-8'), null, 'UTF-8');
 
         return $flags === '' || \preg_match('/^['.\preg_quote(self::ALLOWED_FLAGS, '/').']+$/u', $flags) === 1;
     }

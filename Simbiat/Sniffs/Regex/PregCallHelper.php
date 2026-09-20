@@ -37,14 +37,20 @@ final class PregCallHelper
         $tokens = $phpcsFile->getTokens();
 
         $open_parenthesis = $phpcsFile->findNext(\T_WHITESPACE, $functionNamePtr + 1, null, true);
-        if ($open_parenthesis === false || $tokens[$open_parenthesis]['code'] !== \T_OPEN_PARENTHESIS) {
+        if (
+            $open_parenthesis === false
+            || $tokens[$open_parenthesis]['code'] !== \T_OPEN_PARENTHESIS
+        ) {
             return null;
         }
 
         $closed_parenthesis = $tokens[$open_parenthesis]['parenthesis_closer'];
 
         $pattern_ptr = $phpcsFile->findNext(\T_WHITESPACE, $open_parenthesis + 1, $closed_parenthesis, true);
-        if ($pattern_ptr === false || $tokens[$pattern_ptr]['code'] !== \T_CONSTANT_ENCAPSED_STRING) {
+        if (
+            $pattern_ptr === false
+            || $tokens[$pattern_ptr]['code'] !== \T_CONSTANT_ENCAPSED_STRING
+        ) {
             return null;
         }
 

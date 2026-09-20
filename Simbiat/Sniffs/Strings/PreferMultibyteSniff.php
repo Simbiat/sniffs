@@ -82,6 +82,7 @@ final class PreferMultibyteSniff implements Sniff
      * </code>
      *
      * @return array<int|string>
+     *
      * @see    Tokens.php
      */
     public function register(): array
@@ -137,7 +138,10 @@ final class PreferMultibyteSniff implements Sniff
         }
 
         $open_parenthesis = $phpcsFile->findNext(\T_WHITESPACE, $stackPtr + 1, null, true);
-        if (!$open_parenthesis || $tokens[$open_parenthesis]['code'] !== \T_OPEN_PARENTHESIS) {
+        if (
+            !$open_parenthesis
+            || $tokens[$open_parenthesis]['code'] !== \T_OPEN_PARENTHESIS
+        ) {
             return;
         }
 
@@ -165,13 +169,15 @@ final class PreferMultibyteSniff implements Sniff
         $tokens = $phpcsFile->getTokens();
 
         $first_arg_ptr = $phpcsFile->findNext(\T_WHITESPACE, $openParen + 1, null, true);
-        if ($first_arg_ptr === false || $tokens[$first_arg_ptr]['code'] !== \T_VARIABLE) {
+        if (
+            $first_arg_ptr === false
+            || $tokens[$first_arg_ptr]['code'] !== \T_VARIABLE
+        ) {
             return false;
         }
 
         $name = \mb_strtolower($tokens[$first_arg_ptr]['content'], 'UTF-8');
 
         return array_any(self::NAME_HINTS, fn($hint) => str_contains($name, $hint));
-
     }
 }

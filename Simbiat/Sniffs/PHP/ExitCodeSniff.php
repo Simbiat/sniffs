@@ -32,6 +32,7 @@ final class ExitCodeSniff implements Sniff
      * </code>
      *
      * @return array<int|string>
+     *
      * @see    Tokens.php
      */
     public function register(): array
@@ -79,7 +80,10 @@ final class ExitCodeSniff implements Sniff
         $next = $phpcsFile->findNext(\T_WHITESPACE, $stackPtr + 1, null, true);
 
         // Bare `exit;` / `die;` — no parentheses at all.
-        if ($next === false || $tokens[$next]['code'] !== \T_OPEN_PARENTHESIS) {
+        if (
+            $next === false
+            || $tokens[$next]['code'] !== \T_OPEN_PARENTHESIS
+        ) {
             $fix = $phpcsFile->addFixableWarning(
                 '%s should be called with an explicit exit code, e.g. %s(0).',
                 $stackPtr,
@@ -100,9 +104,10 @@ final class ExitCodeSniff implements Sniff
         // Anything between the parens (even just whitespace/comments) counts
         // as "has an argument" — only a genuinely empty exit()/die() is flagged.
         $has_argument = false;
-        for ($iteration = ($open_parenthesis + 1); $iteration < $close_parenthesis; $iteration++) {
+        for ($iteration = $open_parenthesis + 1; $iteration < $close_parenthesis; $iteration++) {
             if ($tokens[$iteration]['code'] !== \T_WHITESPACE) {
                 $has_argument = true;
+
                 break;
             }
         }

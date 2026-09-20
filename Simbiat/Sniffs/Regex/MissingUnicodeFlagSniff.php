@@ -30,6 +30,7 @@ final class MissingUnicodeFlagSniff implements Sniff
      * </code>
      *
      * @return array<int|string>
+     *
      * @see    Tokens.php
      */
     public function register(): array
@@ -86,7 +87,10 @@ final class MissingUnicodeFlagSniff implements Sniff
         }
 
         $parsed = RegexLiteralHelper::parse($tokens[$pattern_ptr]['content']);
-        if ($parsed === null || str_contains($parsed['flags'], 'u')) {
+        if (
+            $parsed === null
+            || str_contains($parsed['flags'], 'u')
+        ) {
             return;
         }
 

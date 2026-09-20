@@ -28,12 +28,16 @@ final class CallHelper
 
         $prev = $phpcsFile->findPrevious(\T_WHITESPACE, $stackPtr - 1, null, true);
 
-        if ($prev !== false && $tokens[$prev]['code'] === \T_NS_SEPARATOR) {
+        if (
+            $prev !== false
+            && $tokens[$prev]['code'] === \T_NS_SEPARATOR
+        ) {
             // PHPCS backfills PHP 8's T_NAME_FULLY_QUALIFIED / T_NAME_QUALIFIED
             // tokens into T_NS_SEPARATOR + T_STRING sequences, so `\strlen(`
             // and `Foo\strlen(` look identical at this point. The only way
             // to tell them apart is checking what comes before the separator.
             $before_separator = $phpcsFile->findPrevious(\T_WHITESPACE, $prev - 1, null, true);
+
             // Foo\strlen(...) or namespace\strlen(...) — a namespaced
             // function, not necessarily the same one. Leave it alone.
             return !($before_separator !== false && \in_array($tokens[$before_separator]['code'], [\T_STRING, T_NAMESPACE], true));
@@ -63,7 +67,7 @@ final class CallHelper
         $current = '';
         $arguments = [];
 
-        for ($iteration = ($openParen + 1); $iteration < $closeParen; $iteration++) {
+        for ($iteration = $openParen + 1; $iteration < $closeParen; $iteration++) {
             $content = $tokens[$iteration]['content'];
 
             if (\in_array($tokens[$iteration]['code'], [\T_OPEN_PARENTHESIS, \T_OPEN_SQUARE_BRACKET, \T_OPEN_CURLY_BRACKET], true)) {
@@ -73,9 +77,13 @@ final class CallHelper
                 $depth--;
             }
 
-            if ($tokens[$iteration]['code'] === \T_COMMA && $depth === 0) {
+            if (
+                $tokens[$iteration]['code'] === \T_COMMA
+                && $depth === 0
+            ) {
                 $arguments[] = $current;
                 $current = '';
+
                 continue;
             }
 
@@ -96,7 +104,10 @@ final class CallHelper
     {
         foreach ($arguments as $argument) {
             $argument = \mb_trim($argument, null, 'UTF-8');
-            if (str_starts_with($argument, 'encoding:') || str_starts_with($argument, 'encoding :')) {
+            if (
+                str_starts_with($argument, 'encoding:')
+                || str_starts_with($argument, 'encoding :')
+            ) {
                 return true;
             }
         }

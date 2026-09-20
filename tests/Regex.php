@@ -12,37 +12,33 @@
 /** @noinspection PhpMissingDocCommentInspection, PhpUndefinedVariableInspection, PhpUndefinedClassInspection */
 /** @noinspection UnusedFunctionResultInspection, PhpExpressionResultUnusedInspection, AutoloadingIssuesInspection */
 /** @noinspection PhpUnreachableStatementInspection, PhpIllegalPsrClassPathInspection, SqlResolveInspection */
-/** @noinspection PhpStatementHasEmptyBodyInspection, MissingOrEmptyGroupStatementInspection */
 
 declare(strict_types=1);
 
-// Should be flagged + auto-fixable (missing exit code).
-exit();
-die();
-if (true) {
-    exit;
-}
+// === Missing Unicode flag ===
+preg_match('/foo/', $subject, $matches);        // -> '/foo/u'
+preg_match('/foo/i', $subject, $matches);       // -> '/foo/iu' (order phpcs appends in doesn't matter to PCRE)
 
-// Should NOT be flagged (exit code present).
-exit(1);
+// === Has u, no i: neither flag rule fires ===
+preg_match('/foo/u', $subject, $matches);
 
-// Should be flagged, never auto-fixable.
-$fn = new TwigFunction('foo', $callable, ['is_safe' => ['html']]);
+// === Has u + i, missing r (caseless restrict) ===
+preg_match('/foo/ui', $subject, $matches);      // -> '/foo/uir'
 
-// Should NOT be flagged (no `is_safe` key).
-$fn2 = new TwigFunction('bar', $callable, ['needs_environment' => true]);
+// === Has u + i + r already: neither rule fires ===
+preg_match('/foo/uir', $subject, $matches);
 
-// Prefer whiteString(): === 1 form
-if (preg_match('/^\s*$/u', $keep, $rest) === 1) {
-    // suggests \Simbiat\StringHelpers\Sanitize::whiteString($keep)
-}
+// === Missing both u and r (has i only): two-pass convergence ===
+// Pass 1 (MissingUnicodeFlag) -> '/foo/iu'; pass 2 (MissingCaselessRestrictFlag) -> '/foo/iur'
+preg_match('/foo/i', $subject, $matches);
 
-// Prefer whiteString(): !== 1 form, two-arg call (no $rest)
-if (preg_match('/^\s*$/u', $keep2) !== 1) {
-    // suggests !\Simbiat\StringHelpers\Sanitize::whiteString($keep2)
-}
+// === Non-literal pattern (variable): ignored by both flag rules ===
+preg_match($pattern, $subject, $matches);
 
-// Different pattern core: NOT a whiteString candidate (still gets the flag-rule warnings above)
-if (preg_match('/^\s+$/u', $keep3, $rest) === 1) {
-    // no whiteString suggestion - \s+ isn't \s*
-}
+// === Only one argument (no subject): ignored, structurally incomplete ===
+preg_match('/foo/');
+
+// === Covers the other preg_* functions too, not just preg_match ===
+preg_replace('/foo/', $replacement, $subject);   // -> '/foo/u'
+preg_split('/foo/', $subject);                   // -> '/foo/u'
+preg_grep('/foo/', $array);                      // -> '/foo/u'

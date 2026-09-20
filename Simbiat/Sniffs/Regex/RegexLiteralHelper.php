@@ -32,7 +32,10 @@ final class RegexLiteralHelper
         }
 
         $quote = $tokenContent[0];
-        if ($quote !== "'" && $quote !== '"') {
+        if (
+            $quote !== "'"
+            && $quote !== '"'
+        ) {
             // Not a literal string token at all (shouldn't happen given how
             // callers register, but keeps this safe to call standalone).
             return null;
@@ -45,7 +48,10 @@ final class RegexLiteralHelper
 
         $delimiter = $inner[0];
         $last_delimiter = \mb_strrpos($inner, $delimiter, 0, 'UTF-8');
-        if ($last_delimiter === false || $last_delimiter <= 0) {
+        if (
+            $last_delimiter === false
+            || $last_delimiter <= 0
+        ) {
             return null;
         }
 

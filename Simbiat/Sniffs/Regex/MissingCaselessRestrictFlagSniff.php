@@ -38,6 +38,7 @@ final class MissingCaselessRestrictFlagSniff implements Sniff
      * </code>
      *
      * @return array<int|string>
+     *
      * @see    Tokens.php
      */
     public function register(): array
@@ -99,7 +100,11 @@ final class MissingCaselessRestrictFlagSniff implements Sniff
         }
 
         $flags = $parsed['flags'];
-        if (!str_contains($flags, 'u') || !str_contains($flags, 'i') || str_contains($flags, 'r')) {
+        if (
+            !str_contains($flags, 'u')
+            || !str_contains($flags, 'i')
+            || str_contains($flags, 'r')
+        ) {
             return;
         }
 

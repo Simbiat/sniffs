@@ -40,6 +40,7 @@ final class SafeFilterOptionSniff implements Sniff
      * </code>
      *
      * @return array<int|string>
+     *
      * @see    Tokens.php
      */
     public function register(): array
@@ -96,7 +97,10 @@ final class SafeFilterOptionSniff implements Sniff
             $class_name_ptr = $phpcsFile->findNext(\T_WHITESPACE, $class_name_ptr + 1, null, true);
         }
 
-        if ($class_name_ptr === false || $tokens[$class_name_ptr]['code'] !== \T_STRING) {
+        if (
+            $class_name_ptr === false
+            || $tokens[$class_name_ptr]['code'] !== \T_STRING
+        ) {
             return;
         }
 
@@ -108,18 +112,24 @@ final class SafeFilterOptionSniff implements Sniff
         // A following T_NS_SEPARATOR means this was actually `Some\TwigFunction`
         // — a different, namespaced class. Bail.
         $after_name = $phpcsFile->findNext(\T_WHITESPACE, $class_name_ptr + 1, null, true);
-        if ($after_name !== false && $tokens[$after_name]['code'] === \T_NS_SEPARATOR) {
+        if (
+            $after_name !== false
+            && $tokens[$after_name]['code'] === \T_NS_SEPARATOR
+        ) {
             return;
         }
 
         $open_parenthesis = $after_name;
-        if ($open_parenthesis === false || $tokens[$open_parenthesis]['code'] !== \T_OPEN_PARENTHESIS) {
+        if (
+            $open_parenthesis === false
+            || $tokens[$open_parenthesis]['code'] !== \T_OPEN_PARENTHESIS
+        ) {
             return;
         }
 
         $close_parenthesis = $tokens[$open_parenthesis]['parenthesis_closer'];
 
-        for ($iteration = ($open_parenthesis + 1); $iteration < $close_parenthesis; $iteration++) {
+        for ($iteration = $open_parenthesis + 1; $iteration < $close_parenthesis; $iteration++) {
             if ($tokens[$iteration]['code'] === \T_CONSTANT_ENCAPSED_STRING
                 && \mb_trim($tokens[$iteration]['content'], "'\"", 'UTF-8') === 'is_safe'
             ) {

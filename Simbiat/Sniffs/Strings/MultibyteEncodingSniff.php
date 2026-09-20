@@ -77,6 +77,7 @@ final class MultibyteEncodingSniff implements Sniff
      * </code>
      *
      * @return array<int|string>
+     *
      * @see    Tokens.php
      */
     public function register(): array
@@ -132,7 +133,10 @@ final class MultibyteEncodingSniff implements Sniff
         }
 
         $open_parenthesis = $phpcsFile->findNext(\T_WHITESPACE, $stackPtr + 1, null, true);
-        if (!$open_parenthesis || $tokens[$open_parenthesis]['code'] !== \T_OPEN_PARENTHESIS) {
+        if (
+            !$open_parenthesis
+            || $tokens[$open_parenthesis]['code'] !== \T_OPEN_PARENTHESIS
+        ) {
             return;
         }
 
@@ -141,7 +145,10 @@ final class MultibyteEncodingSniff implements Sniff
 
         // Encoding slot already reached positionally, or supplied by name.
         /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
-        if (\count($params) >= self::FUNCTIONS[$function_name] || CallHelper::hasNamedEncoding($params)) {
+        if (
+            \count($params) >= self::FUNCTIONS[$function_name]
+            || CallHelper::hasNamedEncoding($params)
+        ) {
             return;
         }
 
@@ -158,7 +165,7 @@ final class MultibyteEncodingSniff implements Sniff
             // optional parameters sit between the last given argument and
             // the encoding slot, so this never needs to know the exact
             // position — only that the slot is not yet filled (checked above).
-            $prefix = (\count($params) > 0 && \mb_trim(\end($params), null, 'UTF-8') !== '') ? ', ' : '';
+            $prefix = \count($params) > 0 && \mb_trim(\end($params), null, 'UTF-8') !== '' ? ', ' : '';
             $phpcsFile->fixer->addContentBefore($close_parenthesis, $prefix."encoding: 'UTF-8'");
             $phpcsFile->fixer->endChangeset();
         }

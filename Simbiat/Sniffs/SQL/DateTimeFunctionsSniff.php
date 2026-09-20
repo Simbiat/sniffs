@@ -63,12 +63,12 @@ final class DateTimeFunctionsSniff implements Sniff
     /**
      * Statements that need explicit precision
      */
-    private const string PRECISION_DETECT_PATTERN = '/\b(CURRENT_TIMESTAMP|CURRENT_TIME|CURRENT_DATE|UTC_TIMESTAMP|UTC_TIME|UTC_DATE|SYSDATE|NOW|CURTIME|TIMESTAMP|DATETIME)\b(?!\s*\(\s*%d\s*\))/iur';
+    private const string PRECISION_DETECT_PATTERN = '/\b(CURRENT_TIMESTAMP|CURRENT_TIME|UTC_TIMESTAMP|UTC_TIME|SYSDATE|NOW|CURTIME|TIMESTAMP|DATETIME)\b(?!\s*\(\s*%d\s*\))/iur';
 
     /**
      * Fix pattern - captures any existing (digit) clause so it can be normalized rather than appending a second one.
      */
-    private const string PRECISION_FIX_PATTERN = '/\b(CURRENT_TIMESTAMP|CURRENT_TIME|CURRENT_DATE|UTC_TIMESTAMP|UTC_TIME|UTC_DATE|SYSDATE|NOW|CURTIME|TIMESTAMP|DATETIME)\b(\s*\(\s*([0-6]?)\s*\))?/i';
+    private const string PRECISION_FIX_PATTERN = '/\b(CURRENT_TIMESTAMP|CURRENT_TIME|UTC_TIMESTAMP|UTC_TIME|SYSDATE|NOW|CURTIME|TIMESTAMP|DATETIME)\b(\s*\(\s*([0-6]?)\s*\))?/i';
 
     /** Strips `-- line comments` and block comments. */
     private const string COMMENT_PATTERN = '/--[^\r\n]*|\/\*.*?\*\//siur';
@@ -88,6 +88,7 @@ final class DateTimeFunctionsSniff implements Sniff
      * </code>
      *
      * @return array<int|string>
+     *
      * @see    Tokens.php
      */
     public function register(): array
@@ -200,6 +201,8 @@ final class DateTimeFunctionsSniff implements Sniff
             return;
         }
 
+        $edits = $this->mergeOverlappingEdits($edits);
+
         \usort($edits, static fn(array $a, array $b): int => $b['offset'] <=> $a['offset']);
         foreach ($edits as $edit) {
             $body = \substr_replace($body, $edit['replacement'], $edit['offset'], $edit['length']);
@@ -211,7 +214,10 @@ final class DateTimeFunctionsSniff implements Sniff
         // (e.g. an unexpected edge case), bail out instead of risking a
         // mis-split that corrupts the file.
         $new_pieces = \preg_split('/(?<=\n)/', $body, -1, \PREG_SPLIT_NO_EMPTY) ?: [$body];
-        if (!\is_array($new_pieces) || \count($new_pieces) !== \count($fragment_parts)) {
+        if (
+            !\is_array($new_pieces)
+            || \count($new_pieces) !== \count($fragment_parts)
+        ) {
             return;
         }
 
@@ -232,6 +238,7 @@ final class DateTimeFunctionsSniff implements Sniff
 
     /**
      * Is it a start of the fragment
+     *
      * @param array $tokens
      * @param int   $stackPtr
      * @param bool  $isHeredoc
@@ -274,7 +281,10 @@ final class DateTimeFunctionsSniff implements Sniff
         }
 
         $ptr = $startPtr;
-        while (\array_key_exists($ptr + 1, $tokens) && $tokens[$ptr + 1]['code'] === $code) {
+        while (
+            \array_key_exists($ptr + 1, $tokens)
+            && $tokens[$ptr + 1]['code'] === $code
+        ) {
             $ptr++;
             $ptrs[] = $ptr;
 
@@ -295,13 +305,19 @@ final class DateTimeFunctionsSniff implements Sniff
     private function endsWithUnescapedQuote(string $content, string $quoteChar, bool $isFirstFragment): bool
     {
         $min_length = $isFirstFragment ? 2 : 1;
-        if (\mb_strlen($content, 'UTF-8') < $min_length || !\str_ends_with($content, $quoteChar)) {
+        if (
+            \mb_strlen($content, 'UTF-8') < $min_length
+            || !\str_ends_with($content, $quoteChar)
+        ) {
             return false;
         }
 
         $backslashes = 0;
         $iteration = \mb_strlen($content, 'UTF-8') - 2;
-        while ($iteration >= 0 && $content[$iteration] === '\\') {
+        while (
+            $iteration >= 0
+            && $content[$iteration] === '\\'
+        ) {
             $backslashes++;
             $iteration--;
         }
@@ -309,13 +325,16 @@ final class DateTimeFunctionsSniff implements Sniff
         return $backslashes % 2 === 0;
     }
 
-    /** @return list<array{offset: int, length: int, replacement: string}> */
+    /** @return list<array{type: string, offset: int, length: int, replacement: string}> */
     private function collectUtcEdits(string $masked): array
     {
         $edits = [];
 
         $matching_result = \preg_match_all(self::UTC_DETECT_PATTERN, $masked, $matches, \PREG_OFFSET_CAPTURE);
-        if ($matching_result === false || $matching_result < 1) {
+        if (
+            $matching_result === false
+            || $matching_result < 1
+        ) {
             return $edits;
         }
 
@@ -326,6 +345,7 @@ final class DateTimeFunctionsSniff implements Sniff
             $replacement_prefix = ctype_upper(\str_replace('_', '', $utc_prefix)) ? 'CURRENT_' : 'current_';
 
             $edits[] = [
+                'type' => 'utc',
                 'offset' => $offset,
                 'length' => \mb_strlen($full_match, 'UTF-8'),
                 'replacement' => $replacement_prefix.$suffix,
@@ -333,6 +353,63 @@ final class DateTimeFunctionsSniff implements Sniff
         }
 
         return $edits;
+    }
+
+    /**
+     * UTC_TIMESTAMP/UTC_TIME are matched by BOTH this sniff's rules (they
+     * need renaming to CURRENT_*, and - like CURRENT_TIMESTAMP/CURRENT_TIME -
+     * they take a precision argument too). When both rules are enabled
+     * a single occurrence can produce an `utc` edit and a `precision` edit
+     * at the identical offset. Applying two overlapping substr_replace
+     * calls corrupts the string, so overlapping pairs are combined into
+     * one edit here instead - the precision edit's target digit, applied
+     * to the UTC edit's already-corrected keyword.
+     *
+     * @param list<array{type: string, offset: int, length: int, replacement: string, keyword?: string, target?: string}> $edits
+     *
+     * @return list<array{type: string, offset: int, length: int, replacement: string}>
+     */
+    private function mergeOverlappingEdits(array $edits): array
+    {
+        $by_offset = [];
+        foreach ($edits as $edit) {
+            $by_offset[$edit['offset']][] = $edit;
+        }
+
+        $merged = [];
+        foreach ($by_offset as $offset => $group) {
+            if (\count($group) === 1) {
+                $merged[] = $group[0];
+                continue;
+            }
+
+            $utc = null;
+            $precision = null;
+            foreach ($group as $edit) {
+                if ($edit['type'] === 'utc') {
+                    $utc = $edit;
+                }
+                if ($edit['type'] === 'precision') {
+                    $precision = $edit;
+                }
+            }
+
+            if ($utc !== null && $precision !== null) {
+                $merged[] = [
+                    'type' => 'merged',
+                    'offset' => $offset,
+                    'length' => \max($utc['length'], $precision['length']),
+                    'replacement' => $utc['replacement'].'('.$precision['target'].')',
+                ];
+                continue;
+            }
+
+            // Shouldn't normally happen (would mean two edits of the same
+            // type landed on the same offset) - don't silently drop data.
+            $merged[] = $group[0];
+        }
+
+        return $merged;
     }
 
     /**
@@ -352,14 +429,17 @@ final class DateTimeFunctionsSniff implements Sniff
         return \max(0, \min(6, $this->precision));
     }
 
-    /** @return list<array{offset: int, length: int, replacement: string}> */
+    /** @return list<array{type: string, offset: int, length: int, replacement: string, keyword: string, target: string}> */
     private function collectPrecisionEdits(string $masked): array
     {
         $edits = [];
         $target = (string) $this->normalisedPrecision();
 
         $matching_result = \preg_match_all(self::PRECISION_FIX_PATTERN, $masked, $matches, \PREG_OFFSET_CAPTURE);
-        if ($matching_result === false || $matching_result < 1) {
+        if (
+            $matching_result === false
+            || $matching_result < 1
+        ) {
             return $edits;
         }
 
@@ -373,9 +453,12 @@ final class DateTimeFunctionsSniff implements Sniff
             $keyword = $matches[1][$iteration][0];
 
             $edits[] = [
+                'type' => 'precision',
                 'offset' => $offset,
                 'length' => \mb_strlen($full_match, 'UTF-8'),
                 'replacement' => $keyword.'('.$target.')',
+                'keyword' => $keyword,
+                'target' => $target,
             ];
         }
 
