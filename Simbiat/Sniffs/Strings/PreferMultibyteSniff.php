@@ -28,8 +28,6 @@ final class PreferMultibyteSniff implements Sniff
         'ltrim' => 'mb_ltrim',
         'ord' => 'mb_ord',
         'rtrim' => 'mb_rtrim',
-        'str_pad' => 'mb_str_pad',
-        'str_split' => 'mb_str_split',
         'stripos' => 'mb_stripos',
         'stristr' => 'mb_stristr',
         'strlen' => 'mb_strlen',
@@ -40,6 +38,8 @@ final class PreferMultibyteSniff implements Sniff
         'strstr' => 'mb_strstr',
         'strtolower' => 'mb_strtolower',
         'strtoupper' => 'mb_strtoupper',
+        'str_pad' => 'mb_str_pad',
+        'str_split' => 'mb_str_split',
         'substr' => 'mb_substr',
         'substr_count' => 'mb_substr_count',
         'trim' => 'mb_trim',
@@ -178,6 +178,6 @@ final class PreferMultibyteSniff implements Sniff
 
         $name = \mb_strtolower($tokens[$first_arg_ptr]['content'], 'UTF-8');
 
-        return array_any(self::NAME_HINTS, fn($hint) => str_contains($name, $hint));
+        return \array_any(self::NAME_HINTS, fn($hint) => \str_contains($name, $hint));
     }
 }

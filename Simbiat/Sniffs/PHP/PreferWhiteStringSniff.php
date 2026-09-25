@@ -176,7 +176,7 @@ final class PreferWhiteStringSniff implements Sniff
 
         $core = null;
         foreach (['/^\s*$/', '/^\s+$/'] as $candidate) {
-            if (str_starts_with($inner, $candidate)) {
+            if (\str_starts_with($inner, $candidate)) {
                 $core = $candidate;
                 break;
             }

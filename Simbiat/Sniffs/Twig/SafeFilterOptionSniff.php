@@ -130,7 +130,8 @@ final class SafeFilterOptionSniff implements Sniff
         $close_parenthesis = $tokens[$open_parenthesis]['parenthesis_closer'];
 
         for ($iteration = $open_parenthesis + 1; $iteration < $close_parenthesis; $iteration++) {
-            if ($tokens[$iteration]['code'] === \T_CONSTANT_ENCAPSED_STRING
+            if (
+                $tokens[$iteration]['code'] === \T_CONSTANT_ENCAPSED_STRING
                 && \mb_trim($tokens[$iteration]['content'], "'\"", 'UTF-8') === 'is_safe'
             ) {
                 $phpcsFile->addWarning(

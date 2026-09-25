@@ -342,13 +342,13 @@ final class DateTimeFunctionsSniff implements Sniff
             $utc_prefix = $matches[1][$iteration][0];
             $suffix = $matches[2][$iteration][0];
 
-            $replacement_prefix = ctype_upper(\str_replace('_', '', $utc_prefix)) ? 'CURRENT_' : 'current_';
+            $replacement_prefix = \ctype_upper(\str_replace('_', '', $utc_prefix)) ? 'CURRENT_' : 'current_';
 
             $edits[] = [
-                'type' => 'utc',
-                'offset' => $offset,
                 'length' => \mb_strlen($full_match, 'UTF-8'),
+                'offset' => $offset,
                 'replacement' => $replacement_prefix.$suffix,
+                'type' => 'utc',
             ];
         }
 
@@ -396,10 +396,10 @@ final class DateTimeFunctionsSniff implements Sniff
 
             if ($utc !== null && $precision !== null) {
                 $merged[] = [
-                    'type' => 'merged',
-                    'offset' => $offset,
                     'length' => \max($utc['length'], $precision['length']),
+                    'offset' => $offset,
                     'replacement' => $utc['replacement'].'('.$precision['target'].')',
+                    'type' => 'merged',
                 ];
                 continue;
             }
@@ -453,12 +453,12 @@ final class DateTimeFunctionsSniff implements Sniff
             $keyword = $matches[1][$iteration][0];
 
             $edits[] = [
-                'type' => 'precision',
-                'offset' => $offset,
-                'length' => \mb_strlen($full_match, 'UTF-8'),
-                'replacement' => $keyword.'('.$target.')',
                 'keyword' => $keyword,
+                'length' => \mb_strlen($full_match, 'UTF-8'),
+                'offset' => $offset,
+                'replacement' => $keyword.'('.$target.')',
                 'target' => $target,
+                'type' => 'precision',
             ];
         }
 

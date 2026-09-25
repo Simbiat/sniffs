@@ -43,12 +43,18 @@ final class CallHelper
             return !($before_separator !== false && \in_array($tokens[$before_separator]['code'], [\T_STRING, T_NAMESPACE], true));
         }
 
-        if ($prev !== false && \in_array($tokens[$prev]['code'], [
-                \T_OBJECT_OPERATOR,
-                T_NULLSAFE_OBJECT_OPERATOR,
-                \T_DOUBLE_COLON,
-                \T_FUNCTION,
-            ], true)) {
+        if (
+            $prev !== false && \in_array(
+                $tokens[$prev]['code'],
+                [
+                    \T_OBJECT_OPERATOR,
+                    T_NULLSAFE_OBJECT_OPERATOR,
+                    \T_DOUBLE_COLON,
+                    \T_FUNCTION,
+                ],
+                true,
+            )
+        ) {
             // ->func(), Class::func(), function func() {}
             return false;
         }
@@ -105,8 +111,8 @@ final class CallHelper
         foreach ($arguments as $argument) {
             $argument = \mb_trim($argument, null, 'UTF-8');
             if (
-                str_starts_with($argument, 'encoding:')
-                || str_starts_with($argument, 'encoding :')
+                \str_starts_with($argument, 'encoding:')
+                || \str_starts_with($argument, 'encoding :')
             ) {
                 return true;
             }

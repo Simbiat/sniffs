@@ -89,7 +89,7 @@ final class MissingUnicodeFlagSniff implements Sniff
         $parsed = RegexLiteralHelper::parse($tokens[$pattern_ptr]['content']);
         if (
             $parsed === null
-            || str_contains($parsed['flags'], 'u')
+            || \str_contains($parsed['flags'], 'u')
         ) {
             return;
         }
