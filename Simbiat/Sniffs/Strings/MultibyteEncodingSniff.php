@@ -159,15 +159,17 @@ final class MultibyteEncodingSniff implements Sniff
             [$function_name],
         );
 
-        if ($fix) {
-            $phpcsFile->fixer->beginChangeset();
-            // Named argument: always valid here regardless of how many
-            // optional parameters sit between the last given argument and
-            // the encoding slot, so this never needs to know the exact
-            // position — only that the slot is not yet filled (checked above).
-            $prefix = \count($params) > 0 && \mb_trim(\end($params), null, 'UTF-8') !== '' ? ', ' : '';
-            $phpcsFile->fixer->addContentBefore($close_parenthesis, $prefix."encoding: 'UTF-8'");
-            $phpcsFile->fixer->endChangeset();
+        if (!$fix) {
+            return;
         }
+
+        $phpcsFile->fixer->beginChangeset();
+        // Named argument: always valid here regardless of how many
+        // optional parameters sit between the last given argument and
+        // the encoding slot, so this never needs to know the exact
+        // position — only that the slot is not yet filled (checked above).
+        $prefix = \count($params) > 0 && \mb_trim(\end($params), null, 'UTF-8') !== '' ? ', ' : '';
+        $phpcsFile->fixer->addContentBefore($close_parenthesis, $prefix."encoding: 'UTF-8'");
+        $phpcsFile->fixer->endChangeset();
     }
 }

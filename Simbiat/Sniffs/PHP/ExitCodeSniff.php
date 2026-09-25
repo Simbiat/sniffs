@@ -123,10 +123,12 @@ final class ExitCodeSniff implements Sniff
             [$tokens[$stackPtr]['content'], \mb_strtolower($tokens[$stackPtr]['content'], 'UTF-8')],
         );
 
-        if ($fix) {
-            $phpcsFile->fixer->beginChangeset();
-            $phpcsFile->fixer->addContent($open_parenthesis, '0');
-            $phpcsFile->fixer->endChangeset();
+        if (!$fix) {
+            return;
         }
+
+        $phpcsFile->fixer->beginChangeset();
+        $phpcsFile->fixer->addContent($open_parenthesis, '0');
+        $phpcsFile->fixer->endChangeset();
     }
 }
