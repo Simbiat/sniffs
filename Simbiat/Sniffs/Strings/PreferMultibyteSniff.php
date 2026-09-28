@@ -159,6 +159,8 @@ final class PreferMultibyteSniff implements Sniff
     }
 
     /**
+     * Check if argument looks binary
+     *
      * @param \PHP_CodeSniffer\Files\File $phpcsFile
      * @param int                         $openParen
      *
@@ -178,6 +180,6 @@ final class PreferMultibyteSniff implements Sniff
 
         $name = \mb_strtolower($tokens[$first_arg_ptr]['content'], 'UTF-8');
 
-        return \array_any(self::NAME_HINTS, fn($hint) => \str_contains($name, $hint));
+        return \array_any(self::NAME_HINTS, static fn($hint) => \str_contains($name, $hint));
     }
 }

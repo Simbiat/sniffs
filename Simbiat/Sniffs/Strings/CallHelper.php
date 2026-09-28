@@ -40,7 +40,7 @@ final class CallHelper
 
             // Foo\strlen(...) or namespace\strlen(...) — a namespaced
             // function, not necessarily the same one. Leave it alone.
-            return !($before_separator !== false && \in_array($tokens[$before_separator]['code'], [\T_STRING, T_NAMESPACE], true));
+            return !($before_separator !== false && \in_array($tokens[$before_separator]['code'], [\T_STRING, \T_NAMESPACE], true));
         }
 
         if (
@@ -48,7 +48,7 @@ final class CallHelper
                 $tokens[$prev]['code'],
                 [
                     \T_OBJECT_OPERATOR,
-                    T_NULLSAFE_OBJECT_OPERATOR,
+                    \T_NULLSAFE_OBJECT_OPERATOR,
                     \T_DOUBLE_COLON,
                     \T_FUNCTION,
                 ],
@@ -63,7 +63,7 @@ final class CallHelper
     }
 
     /**
-     * @return string[] Raw text of each top-level argument (commas inside
+     * @return array<string> Raw text of each top-level argument (commas inside
      *                   nested parens/brackets/braces are ignored).
      */
     public static function splitArguments(File $phpcsFile, int $openParen, int $closeParen): array
@@ -77,10 +77,10 @@ final class CallHelper
             $content = $tokens[$iteration]['content'];
 
             if (\in_array($tokens[$iteration]['code'], [\T_OPEN_PARENTHESIS, \T_OPEN_SQUARE_BRACKET, \T_OPEN_CURLY_BRACKET], true)) {
-                $depth++;
+                ++$depth;
             }
             if (\in_array($tokens[$iteration]['code'], [\T_CLOSE_PARENTHESIS, \T_CLOSE_SQUARE_BRACKET, \T_CLOSE_CURLY_BRACKET], true)) {
-                $depth--;
+                --$depth;
             }
 
             if (
@@ -104,7 +104,7 @@ final class CallHelper
     }
 
     /**
-     * @param string[] $arguments
+     * @param array<string> $arguments
      */
     public static function hasNamedEncoding(array $arguments): bool
     {

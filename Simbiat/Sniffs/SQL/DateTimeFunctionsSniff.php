@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Simbiat\Sniffs\SQL;
 
-use JetBrains\PhpStorm\Pure;
 use PHP_CodeSniffer\Files\File;
 use PHP_CodeSniffer\Sniffs\Sniff;
 
@@ -37,20 +36,6 @@ use PHP_CodeSniffer\Sniffs\Sniff;
 final class DateTimeFunctionsSniff implements Sniff
 {
     /**
-     * Required fractional-second precision. Configure per-project via
-     * ruleset.xml:
-     *   <rule ref="Simbiat.SQL.DateTimeFunctions">
-     *       <properties>
-     *           <property name="precision" value="6"/>
-     *       </properties>
-     *   </rule>
-     * MySQL/MariaDB accept 0-6; anything outside that range is clamped
-     * rather than silently producing invalid SQL. Defaults to 0 (require
-     * an explicit precision to be stated, without assuming everyone wants
-     * microsecond precision) - this package doesn't assume your value.
-     */
-    public int $precision = 0;
-    /**
      * Statements that will indicate that we likely have an SQL
      */
     private const string SQL_KEYWORDS = 'SELECT|INSERT|UPDATE|DELETE|REPLACE|CREATE|ALTER|WITH|CALL';
@@ -72,6 +57,21 @@ final class DateTimeFunctionsSniff implements Sniff
 
     /** Strips `-- line comments` and block comments. */
     private const string COMMENT_PATTERN = '/--[^\r\n]*|\/\*.*?\*\//siur';
+
+    /**
+     * Required fractional-second precision. Configure per-project via
+     * ruleset.xml:
+     *   <rule ref="Simbiat.SQL.DateTimeFunctions">
+     *       <properties>
+     *           <property name="precision" value="6"/>
+     *       </properties>
+     *   </rule>
+     * MySQL/MariaDB accept 0-6; anything outside that range is clamped
+     * rather than silently producing invalid SQL. Defaults to 0 (require
+     * an explicit precision to be stated, without assuming everyone wants
+     * microsecond precision) - this package doesn't assume your value.
+     */
+    public int $precision = 0;
 
     /**
      * Registers the tokens that this sniff wants to listen for.
@@ -184,7 +184,7 @@ final class DateTimeFunctionsSniff implements Sniff
             }
         }
 
-        $wants_precision_fix = \preg_match($this->precisionDetectPattern(), $masked, $precision_match) === 1;
+        $wants_precision_fix = \preg_match(\sprintf(self::PRECISION_DETECT_PATTERN, $this->normalisedPrecision()), $masked, $precision_match) === 1;
         if ($wants_precision_fix) {
             $fix = $phpcsFile->addFixableWarning(
                 '%s should explicitly state (%d) fractional-second precision.',
@@ -266,7 +266,7 @@ final class DateTimeFunctionsSniff implements Sniff
         if ($isHeredoc) {
             $ptr = $startPtr;
             while (($tokens[$ptr + 1]['code'] ?? null) === \T_HEREDOC) {
-                $ptr++;
+                ++$ptr;
                 $ptrs[] = $ptr;
             }
 
@@ -277,7 +277,8 @@ final class DateTimeFunctionsSniff implements Sniff
         $code = $tokens[$startPtr]['code'];
 
         if ($this->endsWithUnescapedQuote($tokens[$startPtr]['content'], $quote_char, true)) {
-            return $ptrs; // single-fragment, complete string
+            // single-fragment, complete string
+            return $ptrs;
         }
 
         $ptr = $startPtr;
@@ -285,7 +286,7 @@ final class DateTimeFunctionsSniff implements Sniff
             \array_key_exists($ptr + 1, $tokens)
             && $tokens[$ptr + 1]['code'] === $code
         ) {
-            $ptr++;
+            ++$ptr;
             $ptrs[] = $ptr;
 
             if ($this->endsWithUnescapedQuote($tokens[$ptr]['content'], $quote_char, false)) {
@@ -304,7 +305,9 @@ final class DateTimeFunctionsSniff implements Sniff
      */
     private function endsWithUnescapedQuote(string $content, string $quoteChar, bool $isFirstFragment): bool
     {
-        $min_length = $isFirstFragment ? 2 : 1;
+        $min_length = $isFirstFragment
+            ? 2
+            : 1;
         if (
             \mb_strlen($content, 'UTF-8') < $min_length
             || !\str_ends_with($content, $quoteChar)
@@ -318,8 +321,8 @@ final class DateTimeFunctionsSniff implements Sniff
             $iteration >= 0
             && $content[$iteration] === '\\'
         ) {
-            $backslashes++;
-            $iteration--;
+            ++$backslashes;
+            --$iteration;
         }
 
         return $backslashes % 2 === 0;
@@ -342,7 +345,9 @@ final class DateTimeFunctionsSniff implements Sniff
             $utc_prefix = $matches[1][$iteration][0];
             $suffix = $matches[2][$iteration][0];
 
-            $replacement_prefix = \ctype_upper(\str_replace('_', '', $utc_prefix)) ? 'CURRENT_' : 'current_';
+            $replacement_prefix = \ctype_upper(\str_replace('_', '', $utc_prefix))
+                ? 'CURRENT_'
+                : 'current_';
 
             $edits[] = [
                 'length' => \mb_strlen($full_match, 'UTF-8'),
@@ -380,6 +385,7 @@ final class DateTimeFunctionsSniff implements Sniff
         foreach ($by_offset as $offset => $group) {
             if (\count($group) === 1) {
                 $merged[] = $group[0];
+
                 continue;
             }
 
@@ -394,13 +400,17 @@ final class DateTimeFunctionsSniff implements Sniff
                 }
             }
 
-            if ($utc !== null && $precision !== null) {
+            if (
+                $utc !== null
+                && $precision !== null
+            ) {
                 $merged[] = [
                     'length' => \max($utc['length'], $precision['length']),
                     'offset' => $offset,
                     'replacement' => $utc['replacement'].'('.$precision['target'].')',
                     'type' => 'merged',
                 ];
+
                 continue;
             }
 
@@ -413,15 +423,8 @@ final class DateTimeFunctionsSniff implements Sniff
     }
 
     /**
-     * @return string
-     */
-    #[Pure]
-    private function precisionDetectPattern(): string
-    {
-        return \sprintf(self::PRECISION_DETECT_PATTERN, $this->normalisedPrecision());
-    }
-
-    /**
+     * Normalize precision value, so that it's not lower than 0 or greater than 6
+     *
      * @return int
      */
     private function normalisedPrecision(): int

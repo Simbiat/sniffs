@@ -27,7 +27,7 @@ use Simbiat\Sniffs\Strings\CallHelper;
 final class PreferWhiteStringSniff implements Sniff
 {
     /**
-     *
+     * Allowed PCRE2 flags
      */
     private const string ALLOWED_FLAGS = 'imsxeADSUXJur';
 
@@ -133,7 +133,9 @@ final class PreferWhiteStringSniff implements Sniff
             return;
         }
         $subject_end = $phpcsFile->findNext([\T_COMMA], $subject_ptr + 1, $close_parenthesis);
-        $subject_end = $subject_end === false ? $close_parenthesis : $subject_end;
+        $subject_end = $subject_end === false
+            ? $close_parenthesis
+            : $subject_end;
         $subject = \mb_trim($phpcsFile->getTokensAsString($subject_ptr, $subject_end - $subject_ptr), null, 'UTF-8');
 
         // Comparison operator right after the call: === 1 or !== 1.
@@ -172,12 +174,14 @@ final class PreferWhiteStringSniff implements Sniff
      */
     private function isWhitespaceOnlyPattern(string $content): bool
     {
-        $inner = \mb_substr($content, 1, -1, 'UTF-8'); // strip the surrounding quote char
+        // strip the surrounding quote char
+        $inner = \mb_substr($content, 1, -1, 'UTF-8');
 
         $core = null;
         foreach (['/^\s*$/', '/^\s+$/'] as $candidate) {
             if (\str_starts_with($inner, $candidate)) {
                 $core = $candidate;
+
                 break;
             }
         }
