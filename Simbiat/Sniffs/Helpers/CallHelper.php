@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Simbiat\Sniffs\Strings;
+namespace Simbiat\Sniffs\Helpers;
 
 use PHP_CodeSniffer\Files\File;
 
@@ -73,7 +73,7 @@ final class CallHelper
         $current = '';
         $arguments = [];
 
-        for ($iteration = $openParen + 1; $iteration < $closeParen; $iteration++) {
+        for ($iteration = ($openParen + 1); $iteration < $closeParen; $iteration++) {
             $content = $tokens[$iteration]['content'];
 
             if (\in_array($tokens[$iteration]['code'], [\T_OPEN_PARENTHESIS, \T_OPEN_SQUARE_BRACKET, \T_OPEN_CURLY_BRACKET], true)) {

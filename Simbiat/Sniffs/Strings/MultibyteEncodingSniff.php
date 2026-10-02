@@ -6,6 +6,7 @@ namespace Simbiat\Sniffs\Strings;
 
 use PHP_CodeSniffer\Files\File;
 use PHP_CodeSniffer\Sniffs\Sniff;
+use Simbiat\Sniffs\Helpers\CallHelper;
 
 /**
  * Flags mb_* calls that rely on the internal/default encoding instead of
@@ -82,7 +83,7 @@ final class MultibyteEncodingSniff implements Sniff
      */
     public function register(): array
     {
-        return [\T_STRING];
+        return [\T_STRING, \T_NAME_FULLY_QUALIFIED];
     }
 
     /**
@@ -122,7 +123,12 @@ final class MultibyteEncodingSniff implements Sniff
     public function process(File $phpcsFile, int $stackPtr): void
     {
         $tokens = $phpcsFile->getTokens();
-        $function_name = \mb_strtolower($tokens[$stackPtr]['content'], 'UTF-8');
+        $name = $tokens[$stackPtr]['content'];
+
+        // Strip the leading backslash of T_NAME_FULLY_QUALIFIED.
+        $name = \ltrim($name, '\\');
+
+        $function_name = \mb_strtolower($name, 'UTF-8');
 
         if (!\array_key_exists($function_name, self::FUNCTIONS)) {
             return;

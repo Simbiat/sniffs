@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Simbiat\Sniffs\Regex;
+namespace Simbiat\Sniffs\Helpers;
 
 /**
  * Parses the delimiter/flags off a PHP string token that holds a PCRE

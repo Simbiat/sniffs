@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Simbiat\Sniffs\Regex;
+namespace Simbiat\Sniffs\Helpers;
 
 use PHP_CodeSniffer\Files\File;
 

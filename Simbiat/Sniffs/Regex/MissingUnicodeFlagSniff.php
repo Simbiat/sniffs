@@ -6,6 +6,8 @@ namespace Simbiat\Sniffs\Regex;
 
 use PHP_CodeSniffer\Files\File;
 use PHP_CodeSniffer\Sniffs\Sniff;
+use Simbiat\Sniffs\Helpers\PregCallHelper;
+use Simbiat\Sniffs\Helpers\RegexLiteralHelper;
 
 /**
  * Flags preg_* calls whose literal pattern is missing the `u` (Unicode)

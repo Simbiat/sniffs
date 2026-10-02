@@ -6,7 +6,7 @@ namespace Simbiat\Sniffs\PHP;
 
 use PHP_CodeSniffer\Files\File;
 use PHP_CodeSniffer\Sniffs\Sniff;
-use Simbiat\Sniffs\Strings\CallHelper;
+use Simbiat\Sniffs\Helpers\CallHelper;
 
 /**
  * Suggests \Simbiat\StringHelpers\Sanitize::whiteString($subject) instead
