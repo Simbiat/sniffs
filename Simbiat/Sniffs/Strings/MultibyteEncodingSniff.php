@@ -64,6 +64,14 @@ final class MultibyteEncodingSniff implements Sniff
     ];
 
     /**
+     * Functions whose encoding parameter is not literally named
+     * `encoding`. Everything else in FUNCTIONS uses `encoding`.
+     */
+    private const array ENCODING_PARAM_NAMES = [
+        'mb_convert_encoding' => 'from_encoding',
+    ];
+
+    /**
      * Registers the tokens that this sniff wants to listen for.
      *
      * An example return value for a sniff that wants to listen for whitespace
@@ -168,6 +176,8 @@ final class MultibyteEncodingSniff implements Sniff
         if (!$fix) {
             return;
         }
+        /** @var string $function_name */
+        $param_name = self::ENCODING_PARAM_NAMES[$function_name] ?? 'encoding';
 
         $phpcsFile->fixer->beginChangeset();
         // Named argument: always valid here regardless of how many
@@ -177,7 +187,7 @@ final class MultibyteEncodingSniff implements Sniff
         $prefix = \count($params) > 0 && \mb_trim(\end($params), null, 'UTF-8') !== ''
             ? ', '
             : '';
-        $phpcsFile->fixer->addContentBefore($close_parenthesis, $prefix."encoding: 'UTF-8'");
+        $phpcsFile->fixer->addContentBefore($close_parenthesis, $prefix.$param_name.": 'UTF-8'");
         $phpcsFile->fixer->endChangeset();
     }
 }
