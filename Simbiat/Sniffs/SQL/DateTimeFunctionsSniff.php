@@ -36,17 +36,17 @@ use PHP_CodeSniffer\Sniffs\Sniff;
 final class DateTimeFunctionsSniff implements Sniff
 {
     /**
-     * Statements that will indicate that we likely have an SQL
+     * Statements that will indicate that we likely have an SQL.
      */
     private const string SQL_KEYWORDS = 'SELECT|INSERT|UPDATE|DELETE|REPLACE|CREATE|ALTER|WITH|CALL';
 
     /**
-     * Statements that need to be replaced by UTC versions
+     * Statements that need to be replaced by UTC versions.
      */
     private const string UTC_DETECT_PATTERN = '/\b(UTC_)(TIMESTAMP|TIME|DATE)\b/iur';
 
     /**
-     * Statements that need explicit precision
+     * Statements that need explicit precision.
      */
     private const string PRECISION_DETECT_PATTERN = '/\b(CURRENT_TIMESTAMP|CURRENT_TIME|UTC_TIMESTAMP|UTC_TIME|SYSDATE|NOW|CURTIME|TIMESTAMP|DATETIME)\b(?!\s*\(\s*%d\s*\))/iur';
 
@@ -55,7 +55,9 @@ final class DateTimeFunctionsSniff implements Sniff
      */
     private const string PRECISION_FIX_PATTERN = '/\b(CURRENT_TIMESTAMP|CURRENT_TIME|UTC_TIMESTAMP|UTC_TIME|SYSDATE|NOW|CURTIME|TIMESTAMP|DATETIME)\b(\s*\(\s*([0-6]?)\s*\))?/i';
 
-    /** Strips `-- line comments` and block comments. */
+    /**
+     * Strips `-- line comments` and block comments.
+     */
     private const string COMMENT_PATTERN = '/--[^\r\n]*|\/\*.*?\*\//siur';
 
     /**
@@ -126,9 +128,9 @@ final class DateTimeFunctionsSniff implements Sniff
      *                                               was found.
      *
      * @return void Optionally returns a stack pointer. The sniff will not be
-     *                  called again on the current file until the returned stack
-     *                  pointer is reached. Return `$phpcsFile->numTokens` to skip
-     *                  the rest of the file.
+     *              called again on the current file until the returned stack
+     *              pointer is reached. Return `$phpcsFile->numTokens` to skip
+     *              the rest of the file.
      */
     public function process(File $phpcsFile, int $stackPtr): void
     {
@@ -237,7 +239,7 @@ final class DateTimeFunctionsSniff implements Sniff
     }
 
     /**
-     * Is it a start of the fragment
+     * Is it a start of the fragment.
      *
      * @param array $tokens
      * @param int   $stackPtr
@@ -258,7 +260,9 @@ final class DateTimeFunctionsSniff implements Sniff
         return $content !== '' && ($content[0] === "'" || $content[0] === '"');
     }
 
-    /** @return list<int> */
+    /**
+     * @return list<int>
+     */
     private function collectFragments(array $tokens, int $startPtr, bool $isHeredoc): array
     {
         $ptrs = [$startPtr];
@@ -328,7 +332,9 @@ final class DateTimeFunctionsSniff implements Sniff
         return $backslashes % 2 === 0;
     }
 
-    /** @return list<array{type: string, offset: int, length: int, replacement: string}> */
+    /**
+     * @return list<array{type: string, offset: int, length: int, replacement: string}>
+     */
     private function collectUtcEdits(string $masked): array
     {
         $edits = [];
@@ -423,7 +429,7 @@ final class DateTimeFunctionsSniff implements Sniff
     }
 
     /**
-     * Normalize precision value, so that it's not lower than 0 or greater than 6
+     * Normalize precision value, so that it's not lower than 0 or greater than 6.
      *
      * @return int
      */
@@ -432,7 +438,9 @@ final class DateTimeFunctionsSniff implements Sniff
         return \max(0, \min(6, $this->precision));
     }
 
-    /** @return list<array{type: string, offset: int, length: int, replacement: string, keyword: string, target: string}> */
+    /**
+     * @return list<array{type: string, offset: int, length: int, replacement: string, keyword: string, target: string}>
+     */
     private function collectPrecisionEdits(string $masked): array
     {
         $edits = [];

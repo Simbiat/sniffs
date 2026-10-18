@@ -10,11 +10,11 @@
 // phpcs:disable Universal.PHP.DisallowExitDieParentheses, Universal.PHP.RequireExitDieParentheses
 // phpcs:disable SlevomatCodingStandard.PHP.RequireNowdoc, Squiz.PHP.CommentedOutCode,
 // phpcs:disable SlevomatCodingStandard.Whitespaces.DuplicateSpaces
-/** @noinspection PhpEnforceDocCommentInspection, PhpRedundantOptionalArgumentInspection, PhpUnusedParameterInspection */
-/** @noinspection PhpMissingDocCommentInspection, PhpUndefinedVariableInspection, PhpUndefinedClassInspection */
-/** @noinspection UnusedFunctionResultInspection, PhpExpressionResultUnusedInspection, AutoloadingIssuesInspection */
-/** @noinspection PhpUnreachableStatementInspection, PhpIllegalPsrClassPathInspection, SqlResolveInspection */
-/** @noinspection CompositionAndInheritanceInspection */
+/* @noinspection PhpEnforceDocCommentInspection, PhpRedundantOptionalArgumentInspection, PhpUnusedParameterInspection */
+/* @noinspection PhpMissingDocCommentInspection, PhpUndefinedVariableInspection, PhpUndefinedClassInspection */
+/* @noinspection UnusedFunctionResultInspection, PhpExpressionResultUnusedInspection, AutoloadingIssuesInspection */
+/* @noinspection PhpUnreachableStatementInspection, PhpIllegalPsrClassPathInspection, SqlResolveInspection */
+/* @noinspection CompositionAndInheritanceInspection */
 
 declare(strict_types=1);
 
@@ -63,15 +63,15 @@ $mixed_comment = 'SELECT UTC_TIMESTAMP() AS `column` FROM `table` -- see UTC_TIM
 
 // === Heredoc form ===
 $heredoc = <<<SQL
-SELECT NOW() AS `column` FROM dual
-SQL;
+    SELECT NOW() AS `column` FROM dual
+    SQL;
 
 // === Heredoc spanning multiple lines, issue on a NON-FIRST line ===
 // PHPCS tokenizes every heredoc as one token per physical line. This
 // line specifically exercises that the sniff reconstructs the full body
 // before scanning, rather than only ever checking the first line.
 $heredoc_multiline = <<<SQL
-SELECT `id`
-FROM dual
-WHERE `ts` = UTC_TIMESTAMP()
-SQL;
+    SELECT `id`
+    FROM dual
+    WHERE `ts` = UTC_TIMESTAMP()
+    SQL;

@@ -70,9 +70,9 @@ final class ExitCodeSniff implements Sniff
      *                                               was found.
      *
      * @return void Optionally returns a stack pointer. The sniff will not be
-     *                  called again on the current file until the returned stack
-     *                  pointer is reached. Return `$phpcsFile->numTokens` to skip
-     *                  the rest of the file.
+     *              called again on the current file until the returned stack
+     *              pointer is reached. Return `$phpcsFile->numTokens` to skip
+     *              the rest of the file.
      */
     public function process(File $phpcsFile, int $stackPtr): void
     {
@@ -104,7 +104,7 @@ final class ExitCodeSniff implements Sniff
         // Anything between the parens (even just whitespace/comments) counts
         // as "has an argument" — only a genuinely empty exit()/die() is flagged.
         $has_argument = false;
-        for ($iteration = $open_parenthesis + 1; $iteration < $close_parenthesis; $iteration++) {
+        for ($iteration = $open_parenthesis + 1; $iteration < $close_parenthesis; ++$iteration) {
             if ($tokens[$iteration]['code'] !== \T_WHITESPACE) {
                 $has_argument = true;
 

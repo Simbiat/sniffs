@@ -21,7 +21,7 @@ use PHP_CodeSniffer\Sniffs\Sniff;
 final class SafeFilterOptionSniff implements Sniff
 {
     /**
-     * Classes to check
+     * Classes to check.
      */
     private const array CLASSES = ['TwigFunction', 'TwigFilter'];
 
@@ -78,9 +78,9 @@ final class SafeFilterOptionSniff implements Sniff
      *                                               was found.
      *
      * @return void Optionally returns a stack pointer. The sniff will not be
-     *                  called again on the current file until the returned stack
-     *                  pointer is reached. Return `$phpcsFile->numTokens` to skip
-     *                  the rest of the file.
+     *              called again on the current file until the returned stack
+     *              pointer is reached. Return `$phpcsFile->numTokens` to skip
+     *              the rest of the file.
      */
     public function process(File $phpcsFile, int $stackPtr): void
     {
@@ -129,7 +129,7 @@ final class SafeFilterOptionSniff implements Sniff
 
         $close_parenthesis = $tokens[$open_parenthesis]['parenthesis_closer'];
 
-        for ($iteration = $open_parenthesis + 1; $iteration < $close_parenthesis; $iteration++) {
+        for ($iteration = $open_parenthesis + 1; $iteration < $close_parenthesis; ++$iteration) {
             if (
                 $tokens[$iteration]['code'] === \T_CONSTANT_ENCAPSED_STRING
                 && \mb_trim($tokens[$iteration]['content'], "'\"", 'UTF-8') === 'is_safe'

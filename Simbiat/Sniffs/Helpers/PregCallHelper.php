@@ -14,7 +14,7 @@ use PHP_CodeSniffer\Files\File;
 final class PregCallHelper
 {
     /**
-     * List of functions to check
+     * List of functions to check.
      */
     public const array FUNCTIONS = [
         'preg_filter',
@@ -28,9 +28,9 @@ final class PregCallHelper
     ];
 
     /**
-     * @return int|null Stack pointer of the pattern's T_CONSTANT_ENCAPSED_STRING
-     *   token, or null if this isn't a matching call with a literal pattern
-     *   and at least one further argument.
+     * @return null|int Stack pointer of the pattern's T_CONSTANT_ENCAPSED_STRING
+     *                  token, or null if this isn't a matching call with a literal pattern
+     *                  and at least one further argument.
      */
     public static function findPatternToken(File $phpcsFile, int $functionNamePtr): ?int
     {

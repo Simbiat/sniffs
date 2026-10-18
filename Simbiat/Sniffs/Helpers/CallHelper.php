@@ -43,7 +43,7 @@ final class CallHelper
             return !($before_separator !== false && \in_array($tokens[$before_separator]['code'], [\T_STRING, \T_NAMESPACE], true));
         }
 
-        if (
+        return !(
             $prev !== false && \in_array(
                 $tokens[$prev]['code'],
                 [
@@ -54,17 +54,14 @@ final class CallHelper
                 ],
                 true,
             )
-        ) {
+        ) 
             // ->func(), Class::func(), function func() {}
-            return false;
-        }
-
-        return true;
+;
     }
 
     /**
      * @return array<string> Raw text of each top-level argument (commas inside
-     *                   nested parens/brackets/braces are ignored).
+     *                       nested parens/brackets/braces are ignored).
      */
     public static function splitArguments(File $phpcsFile, int $openParen, int $closeParen): array
     {
@@ -73,7 +70,7 @@ final class CallHelper
         $current = '';
         $arguments = [];
 
-        for ($iteration = ($openParen + 1); $iteration < $closeParen; $iteration++) {
+        for ($iteration = ($openParen + 1); $iteration < $closeParen; ++$iteration) {
             $content = $tokens[$iteration]['content'];
 
             if (\in_array($tokens[$iteration]['code'], [\T_OPEN_PARENTHESIS, \T_OPEN_SQUARE_BRACKET, \T_OPEN_CURLY_BRACKET], true)) {

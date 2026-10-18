@@ -27,7 +27,7 @@ use Simbiat\Sniffs\Helpers\CallHelper;
 final class PreferWhiteStringSniff implements Sniff
 {
     /**
-     * Allowed PCRE2 flags
+     * Allowed PCRE2 flags.
      */
     private const string ALLOWED_FLAGS = 'imsxeADSUXJur';
 
@@ -84,9 +84,9 @@ final class PreferWhiteStringSniff implements Sniff
      *                                               was found.
      *
      * @return void Optionally returns a stack pointer. The sniff will not be
-     *                  called again on the current file until the returned stack
-     *                  pointer is reached. Return `$phpcsFile->numTokens` to skip
-     *                  the rest of the file.
+     *              called again on the current file until the returned stack
+     *              pointer is reached. Return `$phpcsFile->numTokens` to skip
+     *              the rest of the file.
      */
     public function process(File $phpcsFile, int $stackPtr): void
     {
@@ -119,7 +119,7 @@ final class PreferWhiteStringSniff implements Sniff
         }
 
         $pattern_content = $tokens[$pattern_ptr]['content'];
-        if (!$this->isWhitespaceOnlyPattern($pattern_content)) {
+        if (!self::isWhitespaceOnlyPattern($pattern_content)) {
             return;
         }
 
@@ -172,7 +172,7 @@ final class PreferWhiteStringSniff implements Sniff
      * /^\s+$/ as the pattern core, with flags drawn exclusively from
      * ALLOWED_FLAGS.
      */
-    private function isWhitespaceOnlyPattern(string $content): bool
+    private static function isWhitespaceOnlyPattern(string $content): bool
     {
         // strip the surrounding quote char
         $inner = \mb_substr($content, 1, -1, 'UTF-8');

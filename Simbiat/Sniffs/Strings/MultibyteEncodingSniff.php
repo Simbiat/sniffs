@@ -124,9 +124,9 @@ final class MultibyteEncodingSniff implements Sniff
      *                                               was found.
      *
      * @return void Optionally returns a stack pointer. The sniff will not be
-     *                  called again on the current file until the returned stack
-     *                  pointer is reached. Return `$phpcsFile->numTokens` to skip
-     *                  the rest of the file.
+     *              called again on the current file until the returned stack
+     *              pointer is reached. Return `$phpcsFile->numTokens` to skip
+     *              the rest of the file.
      */
     public function process(File $phpcsFile, int $stackPtr): void
     {
@@ -158,7 +158,7 @@ final class MultibyteEncodingSniff implements Sniff
         $params = CallHelper::splitArguments($phpcsFile, $open_parenthesis, $close_parenthesis);
 
         // Encoding slot already reached positionally, or supplied by name.
-        /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
+        /* @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
         if (
             \count($params) >= self::FUNCTIONS[$function_name]
             || CallHelper::hasNamedEncoding($params)

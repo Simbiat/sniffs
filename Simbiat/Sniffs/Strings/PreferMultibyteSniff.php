@@ -21,7 +21,7 @@ use Simbiat\Sniffs\Helpers\CallHelper;
 final class PreferMultibyteSniff implements Sniff
 {
     /**
-     * What functions should be replaced with what alternatives
+     * What functions should be replaced with what alternatives.
      */
     private const array MAP = [
         'chr' => 'mb_chr',
@@ -121,9 +121,9 @@ final class PreferMultibyteSniff implements Sniff
      *                                               was found.
      *
      * @return void Optionally returns a stack pointer. The sniff will not be
-     *                  called again on the current file until the returned stack
-     *                  pointer is reached. Return `$phpcsFile->numTokens` to skip
-     *                  the rest of the file.
+     *              called again on the current file until the returned stack
+     *              pointer is reached. Return `$phpcsFile->numTokens` to skip
+     *              the rest of the file.
      */
     public function process(File $phpcsFile, int $stackPtr): void
     {
@@ -155,7 +155,7 @@ final class PreferMultibyteSniff implements Sniff
             return;
         }
 
-        /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
+        /* @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
         $phpcsFile->addWarning(
             'Consider %s() instead of %s(), unless this is deliberately operating on binary/single-byte data.',
             $stackPtr,
@@ -165,7 +165,7 @@ final class PreferMultibyteSniff implements Sniff
     }
 
     /**
-     * Check if argument looks binary
+     * Check if argument looks binary.
      *
      * @param \PHP_CodeSniffer\Files\File $phpcsFile
      * @param int                         $openParen

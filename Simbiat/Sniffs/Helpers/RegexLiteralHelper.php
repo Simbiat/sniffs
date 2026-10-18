@@ -20,10 +20,10 @@ namespace Simbiat\Sniffs\Helpers;
 final class RegexLiteralHelper
 {
     /**
-     * @return array{flags: string, delimPos: int}|null `delimPos` is the
-     *   offset of the *opening* delimiter within the raw token content
-     *   (right after the quote), so callers can locate where the flags end
-     *   (= end of string, before the closing quote) without re-parsing.
+     * @return null|array{flags: string, delimPos: int} `delimPos` is the
+     *                                                  offset of the *opening* delimiter within the raw token content
+     *                                                  (right after the quote), so callers can locate where the flags end
+     *                                                  (= end of string, before the closing quote) without re-parsing.
      */
     public static function parse(string $tokenContent): ?array
     {
