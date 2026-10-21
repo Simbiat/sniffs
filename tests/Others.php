@@ -19,7 +19,7 @@ declare(strict_types=1);
 // Should be flagged + auto-fixable (missing exit code).
 exit();
 die();
-if (true) {
+if ($something === true) {
     exit;
 }
 

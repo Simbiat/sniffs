@@ -40,20 +40,18 @@ final class CallHelper
 
             // Foo\strlen(...) or namespace\strlen(...) — a namespaced
             // function, not necessarily the same one. Leave it alone.
-            return !($before_separator !== false && \in_array($tokens[$before_separator]['code'], [\T_STRING, \T_NAMESPACE], true));
+            return $before_separator === false || !\in_array($tokens[$before_separator]['code'], [\T_STRING, \T_NAMESPACE], strict: true);
         }
 
-        return !(
-            $prev !== false && \in_array(
-                $tokens[$prev]['code'],
-                [
-                    \T_OBJECT_OPERATOR,
-                    \T_NULLSAFE_OBJECT_OPERATOR,
-                    \T_DOUBLE_COLON,
-                    \T_FUNCTION,
-                ],
-                true,
-            )
+        return $prev === false || !\in_array(
+            $tokens[$prev]['code'],
+            [
+                \T_OBJECT_OPERATOR,
+                \T_NULLSAFE_OBJECT_OPERATOR,
+                \T_DOUBLE_COLON,
+                \T_FUNCTION,
+            ],
+            strict: true,
         ) 
             // ->func(), Class::func(), function func() {}
 ;
@@ -73,10 +71,11 @@ final class CallHelper
         for ($iteration = ($openParen + 1); $iteration < $closeParen; ++$iteration) {
             $content = $tokens[$iteration]['content'];
 
-            if (\in_array($tokens[$iteration]['code'], [\T_OPEN_PARENTHESIS, \T_OPEN_SQUARE_BRACKET, \T_OPEN_CURLY_BRACKET], true)) {
+            if (\in_array($tokens[$iteration]['code'], [\T_OPEN_PARENTHESIS, \T_OPEN_SQUARE_BRACKET, \T_OPEN_CURLY_BRACKET], strict: true)) {
                 ++$depth;
             }
-            if (\in_array($tokens[$iteration]['code'], [\T_CLOSE_PARENTHESIS, \T_CLOSE_SQUARE_BRACKET, \T_CLOSE_CURLY_BRACKET], true)) {
+
+            if (\in_array($tokens[$iteration]['code'], [\T_CLOSE_PARENTHESIS, \T_CLOSE_SQUARE_BRACKET, \T_CLOSE_CURLY_BRACKET], strict: true)) {
                 --$depth;
             }
 
@@ -93,7 +92,7 @@ final class CallHelper
             $current .= $content;
         }
 
-        if (\mb_trim($current, null, 'UTF-8') !== '') {
+        if (\mb_trim($current, encoding: 'UTF-8') !== '') {
             $arguments[] = $current;
         }
 
@@ -106,7 +105,7 @@ final class CallHelper
     public static function hasNamedEncoding(array $arguments): bool
     {
         foreach ($arguments as $argument) {
-            $argument = \mb_trim($argument, null, 'UTF-8');
+            $argument = \mb_trim($argument, encoding: 'UTF-8');
             if (
                 \str_starts_with($argument, 'encoding:')
                 || \str_starts_with($argument, 'encoding :')

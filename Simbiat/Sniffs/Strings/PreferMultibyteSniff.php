@@ -186,6 +186,6 @@ final class PreferMultibyteSniff implements Sniff
 
         $name = \mb_strtolower($tokens[$first_arg_ptr]['content'], 'UTF-8');
 
-        return \array_any(self::NAME_HINTS, static fn($hint) => \str_contains($name, $hint));
+        return \array_any(self::NAME_HINTS, static fn(string $hint): bool => \str_contains($name, $hint));
     }
 }

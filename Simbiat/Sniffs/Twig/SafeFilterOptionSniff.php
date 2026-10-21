@@ -105,7 +105,7 @@ final class SafeFilterOptionSniff implements Sniff
         }
 
         $class_name = $tokens[$class_name_ptr]['content'];
-        if (!\in_array($class_name, self::CLASSES, true)) {
+        if (!\in_array($class_name, self::CLASSES, strict: true)) {
             return;
         }
 

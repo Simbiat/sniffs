@@ -87,7 +87,7 @@ final class MissingCaselessRestrictFlagSniff implements Sniff
         $tokens = $phpcsFile->getTokens();
         $function_name = \mb_strtolower($tokens[$stackPtr]['content'], 'UTF-8');
 
-        if (!\in_array($function_name, PregCallHelper::FUNCTIONS, true)) {
+        if (!\in_array($function_name, PregCallHelper::FUNCTIONS, strict: true)) {
             return;
         }
 

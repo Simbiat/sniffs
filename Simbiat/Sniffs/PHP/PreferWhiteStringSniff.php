@@ -7,6 +7,7 @@ namespace Simbiat\Sniffs\PHP;
 use PHP_CodeSniffer\Files\File;
 use PHP_CodeSniffer\Sniffs\Sniff;
 use Simbiat\Sniffs\Helpers\CallHelper;
+use Simbiat\StringHelpers\Sanitize;
 
 /**
  * Suggests \Simbiat\StringHelpers\Sanitize::whiteString($subject) instead
@@ -128,24 +129,27 @@ final class PreferWhiteStringSniff implements Sniff
         if ($comma === false) {
             return;
         }
+
         $subject_ptr = $phpcsFile->findNext(\T_WHITESPACE, $comma + 1, $close_parenthesis, true);
         if ($subject_ptr === false) {
             return;
         }
+
         $subject_end = $phpcsFile->findNext([\T_COMMA], $subject_ptr + 1, $close_parenthesis);
         $subject_end = $subject_end === false
             ? $close_parenthesis
             : $subject_end;
-        $subject = \mb_trim($phpcsFile->getTokensAsString($subject_ptr, $subject_end - $subject_ptr), null, 'UTF-8');
+        $subject = \mb_trim($phpcsFile->getTokensAsString($subject_ptr, $subject_end - $subject_ptr), encoding: 'UTF-8');
 
         // Comparison operator right after the call: === 1 or !== 1.
         $after_call = $phpcsFile->findNext(\T_WHITESPACE, $close_parenthesis + 1, null, true);
         if (
             $after_call === false
-            || !\in_array($tokens[$after_call]['code'], [\T_IS_IDENTICAL, \T_IS_NOT_IDENTICAL], true)
+            || !\in_array($tokens[$after_call]['code'], [\T_IS_IDENTICAL, \T_IS_NOT_IDENTICAL], strict: true)
         ) {
             return;
         }
+
         $one_ptr = $phpcsFile->findNext(\T_WHITESPACE, $after_call + 1, null, true);
         if (
             $one_ptr === false
@@ -156,7 +160,7 @@ final class PreferWhiteStringSniff implements Sniff
         }
 
         $negated = $tokens[$after_call]['code'] === \T_IS_NOT_IDENTICAL;
-        $suggestion = ($negated ? '!' : '').'\Simbiat\StringHelpers\Sanitize::whiteString('.$subject.')';
+        $suggestion = ($negated ? '!' : '').Sanitize::class.'::whiteString('.$subject.')';
 
         $phpcsFile->addWarning(
             'Consider %s instead of a hand-rolled whitespace-only regex check.',
@@ -176,21 +180,13 @@ final class PreferWhiteStringSniff implements Sniff
     {
         // strip the surrounding quote char
         $inner = \mb_substr($content, 1, -1, 'UTF-8');
-
-        $core = null;
-        foreach (['/^\s*$/', '/^\s+$/'] as $candidate) {
-            if (\str_starts_with($inner, $candidate)) {
-                $core = $candidate;
-
-                break;
-            }
-        }
+        $core = array_find(['/^\s*$/', '/^\s+$/'], fn($candidate): bool => \str_starts_with($inner, $candidate));
 
         if ($core === null) {
             return false;
         }
 
-        $flags = \mb_substr($inner, \mb_strlen($core, 'UTF-8'), null, 'UTF-8');
+        $flags = \mb_substr($inner, \mb_strlen($core, 'UTF-8'), encoding: 'UTF-8');
 
         return $flags === '' || \preg_match('/^['.\preg_quote(self::ALLOWED_FLAGS, '/').']+$/u', $flags) === 1;
     }

@@ -36,14 +36,14 @@ mb_str_split($str, $length);
 mb_strcut($str, $start, $length);
 mb_strimwidth($str, $start, $width, '...');
 mb_stripos($haystack, $needle, $offset);
-mb_stristr($haystack, $needle, false);
+mb_stristr($haystack, $needle, before_needle: false);
 mb_strlen($str);
 mb_strpos($haystack, $needle, $offset);
-mb_strrchr($haystack, $needle, false);
-mb_strrichr($haystack, $needle, false);
+mb_strrchr($haystack, $needle, before_needle: false);
+mb_strrichr($haystack, $needle, before_needle: false);
 mb_strripos($haystack, $needle, $offset);
-mb_strrpos($haystack, $needle, $offset);
-mb_strstr($haystack, $needle, false);
+mb_strrpos($haystack, $needle, 0, $offset);
+mb_strstr($haystack, $needle, before_needle: false);
 mb_strtolower($str);
 mb_strtoupper($str);
 mb_strwidth($str);
@@ -67,14 +67,14 @@ ord($str);
 rtrim($str);
 str_pad($str, $length);
 str_split($str);
-stripos($haystack, $needle);
-stristr($haystack, $needle);
+stripos($haystack, (string) $needle);
+stristr($haystack, (string) $needle);
 strlen($str);
-strpos($haystack, $needle);
-strrchr($haystack, $needle);
-strripos($haystack, $needle);
-strrpos($haystack, $needle);
-strstr($haystack, $needle);
+strpos($haystack, (string) $needle);
+strrchr($haystack, (string) $needle);
+strripos($haystack, (string) $needle);
+strrpos($haystack, (string) $needle);
+strstr($haystack, (string) $needle);
 strtolower($str);
 strtoupper($str);
 substr($str, $start);
@@ -103,7 +103,7 @@ $variable_h = $obj->strlen($str);
 
 final class Foo
 {
-    public function strlen(string $s): int
+    public function strlen(): int
     {
         return 0;
     }

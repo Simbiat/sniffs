@@ -216,15 +216,13 @@ final class DateTimeFunctionsSniff implements Sniff
         // (e.g. an unexpected edge case), bail out instead of risking a
         // mis-split that corrupts the file.
         $new_pieces = \preg_split('/(?<=\n)/', $body, -1, \PREG_SPLIT_NO_EMPTY) ?: [$body];
-        if (
-            !\is_array($new_pieces)
-            || \count($new_pieces) !== \count($fragment_parts)
-        ) {
+        if (\count($new_pieces) !== \count($fragment_parts)) {
             return;
         }
 
         if (!$is_heredoc) {
             $last_index = \count($new_pieces) - 1;
+            /** @noinspection OffsetOperationsInspection False-positive, due to `preg_split` being able to return `false`, but that `false` is guarded against already */
             $new_pieces[0] = $quote.$new_pieces[0];
             $new_pieces[$last_index] .= $quote;
         }
@@ -235,13 +233,14 @@ final class DateTimeFunctionsSniff implements Sniff
                 $phpcsFile->fixer->replaceToken($ptr, $new_pieces[$iteration]);
             }
         }
+
         $phpcsFile->fixer->endChangeset();
     }
 
     /**
      * Is it a start of the fragment.
      *
-     * @param array $tokens
+     * @param array<int, mixed> $tokens
      * @param int   $stackPtr
      * @param bool  $isHeredoc
      *
@@ -262,6 +261,7 @@ final class DateTimeFunctionsSniff implements Sniff
 
     /**
      * @return list<int>
+     * @param array<int, mixed> $tokens
      */
     private function collectFragments(array $tokens, int $startPtr, bool $isHeredoc): array
     {
@@ -280,7 +280,7 @@ final class DateTimeFunctionsSniff implements Sniff
         $quote_char = $tokens[$startPtr]['content'][0];
         $code = $tokens[$startPtr]['code'];
 
-        if ($this->endsWithUnescapedQuote($tokens[$startPtr]['content'], $quote_char, true)) {
+        if ($this->endsWithUnescapedQuote($tokens[$startPtr]['content'], $quote_char, isFirstFragment: true)) {
             // single-fragment, complete string
             return $ptrs;
         }
@@ -293,7 +293,7 @@ final class DateTimeFunctionsSniff implements Sniff
             ++$ptr;
             $ptrs[] = $ptr;
 
-            if ($this->endsWithUnescapedQuote($tokens[$ptr]['content'], $quote_char, false)) {
+            if ($this->endsWithUnescapedQuote($tokens[$ptr]['content'], $quote_char, isFirstFragment: false)) {
                 break;
             }
         }
@@ -401,6 +401,7 @@ final class DateTimeFunctionsSniff implements Sniff
                 if ($edit['type'] === 'utc') {
                     $utc = $edit;
                 }
+
                 if ($edit['type'] === 'precision') {
                     $precision = $edit;
                 }

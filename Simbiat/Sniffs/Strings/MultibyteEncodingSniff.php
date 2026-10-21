@@ -176,6 +176,7 @@ final class MultibyteEncodingSniff implements Sniff
         if (!$fix) {
             return;
         }
+
         /** @var string $function_name */
         $param_name = self::ENCODING_PARAM_NAMES[$function_name] ?? 'encoding';
 
@@ -184,7 +185,7 @@ final class MultibyteEncodingSniff implements Sniff
         // optional parameters sit between the last given argument and
         // the encoding slot, so this never needs to know the exact
         // position — only that the slot is not yet filled (checked above).
-        $prefix = \count($params) > 0 && \mb_trim(\end($params), null, 'UTF-8') !== ''
+        $prefix = \count($params) > 0 && \mb_trim(\end($params), encoding: 'UTF-8') !== ''
             ? ', '
             : '';
         $phpcsFile->fixer->addContentBefore($close_parenthesis, $prefix.$param_name.": 'UTF-8'");
