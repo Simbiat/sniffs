@@ -26,29 +26,6 @@ use Simbiat\Sniffs\Helpers\RegexLiteralHelper;
 final class MissingCaselessRestrictFlagSniff implements Sniff
 {
     /**
-     * Registers the tokens that this sniff wants to listen for.
-     *
-     * An example return value for a sniff that wants to listen for whitespace
-     * and any comments would be:
-     *
-     * <code>
-     *    return array(
-     *        T_WHITESPACE,
-     *        T_DOC_COMMENT,
-     *        T_COMMENT,
-     *    );
-     * </code>
-     *
-     * @return array<int|string>
-     *
-     * @see    Tokens.php
-     */
-    public function register(): array
-    {
-        return [\T_STRING];
-    }
-
-    /**
      * Called when one of the token types that this sniff is listening for
      * is found.
      *
@@ -71,11 +48,11 @@ final class MissingCaselessRestrictFlagSniff implements Sniff
      *    $phpcsFile->addError('Encountered an error', $stackPtr);
      * </code>
      *
-     * @param \PHP_CodeSniffer\Files\File $phpcsFile The PHP_CodeSniffer file where the
-     *                                               token was found.
-     * @param int                         $stackPtr  The position in the PHP_CodeSniffer
-     *                                               file's token stack where the token
-     *                                               was found.
+     * @param File $phpcsFile The PHP_CodeSniffer file where the
+     *                        token was found.
+     * @param int  $stackPtr  The position in the PHP_CodeSniffer
+     *                        file's token stack where the token
+     *                        was found.
      *
      * @return void Optionally returns a stack pointer. The sniff will not be
      *              called again on the current file until the returned stack
@@ -123,5 +100,28 @@ final class MissingCaselessRestrictFlagSniff implements Sniff
                 RegexLiteralHelper::appendFlag($tokens[$pattern_ptr]['content'], 'r'),
             );
         }
+    }
+
+    /**
+     * Registers the tokens that this sniff wants to listen for.
+     *
+     * An example return value for a sniff that wants to listen for whitespace
+     * and any comments would be:
+     *
+     * <code>
+     *    return array(
+     *        T_WHITESPACE,
+     *        T_DOC_COMMENT,
+     *        T_COMMENT,
+     *    );
+     * </code>
+     *
+     * @return array<int|string>
+     *
+     * @see    Tokens.php
+     */
+    public function register(): array
+    {
+        return [\T_STRING];
     }
 }

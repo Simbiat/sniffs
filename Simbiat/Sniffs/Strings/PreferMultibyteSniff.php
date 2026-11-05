@@ -69,29 +69,6 @@ final class PreferMultibyteSniff implements Sniff
     ];
 
     /**
-     * Registers the tokens that this sniff wants to listen for.
-     *
-     * An example return value for a sniff that wants to listen for whitespace
-     * and any comments would be:
-     *
-     * <code>
-     *    return array(
-     *        T_WHITESPACE,
-     *        T_DOC_COMMENT,
-     *        T_COMMENT,
-     *    );
-     * </code>
-     *
-     * @return array<int|string>
-     *
-     * @see    Tokens.php
-     */
-    public function register(): array
-    {
-        return [\T_STRING, \T_NAME_FULLY_QUALIFIED];
-    }
-
-    /**
      * Called when one of the token types that this sniff is listening for
      * is found.
      *
@@ -114,11 +91,11 @@ final class PreferMultibyteSniff implements Sniff
      *    $phpcsFile->addError('Encountered an error', $stackPtr);
      * </code>
      *
-     * @param \PHP_CodeSniffer\Files\File $phpcsFile The PHP_CodeSniffer file where the
-     *                                               token was found.
-     * @param int                         $stackPtr  The position in the PHP_CodeSniffer
-     *                                               file's token stack where the token
-     *                                               was found.
+     * @param File $phpcsFile The PHP_CodeSniffer file where the
+     *                        token was found.
+     * @param int  $stackPtr  The position in the PHP_CodeSniffer
+     *                        file's token stack where the token
+     *                        was found.
      *
      * @return void Optionally returns a stack pointer. The sniff will not be
      *              called again on the current file until the returned stack
@@ -151,7 +128,7 @@ final class PreferMultibyteSniff implements Sniff
             return;
         }
 
-        if ($this->firstArgumentLooksBinary($phpcsFile, $open_parenthesis)) {
+        if (self::firstArgumentLooksBinary($phpcsFile, $open_parenthesis)) {
             return;
         }
 
@@ -165,14 +142,37 @@ final class PreferMultibyteSniff implements Sniff
     }
 
     /**
+     * Registers the tokens that this sniff wants to listen for.
+     *
+     * An example return value for a sniff that wants to listen for whitespace
+     * and any comments would be:
+     *
+     * <code>
+     *    return array(
+     *        T_WHITESPACE,
+     *        T_DOC_COMMENT,
+     *        T_COMMENT,
+     *    );
+     * </code>
+     *
+     * @return array<int|string>
+     *
+     * @see    Tokens.php
+     */
+    public function register(): array
+    {
+        return [\T_STRING, \T_NAME_FULLY_QUALIFIED];
+    }
+
+    /**
      * Check if argument looks binary.
      *
-     * @param \PHP_CodeSniffer\Files\File $phpcsFile
-     * @param int                         $openParen
+     * @param File $phpcsFile
+     * @param int  $openParen
      *
      * @return bool
      */
-    private function firstArgumentLooksBinary(File $phpcsFile, int $openParen): bool
+    private static function firstArgumentLooksBinary(File $phpcsFile, int $openParen): bool
     {
         $tokens = $phpcsFile->getTokens();
 

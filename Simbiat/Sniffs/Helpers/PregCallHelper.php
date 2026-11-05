@@ -28,7 +28,10 @@ final class PregCallHelper
     ];
 
     /**
-     * @return null|int Stack pointer of the pattern's T_CONSTANT_ENCAPSED_STRING
+     * @param File $phpcsFile
+     * @param int  $functionNamePtr
+     *
+     * @return int|null Stack pointer of the pattern's T_CONSTANT_ENCAPSED_STRING
      *                  token, or null if this isn't a matching call with a literal pattern
      *                  and at least one further argument.
      */

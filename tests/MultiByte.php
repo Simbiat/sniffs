@@ -1,14 +1,20 @@
 <?php
 
 /**
- * Suppressing some inspections, since this is a test file, and is not supposed to be "correct"
+ * Suppressing some inspections, since this is a test file, and is not supposed to be "correct".
  *
  * @phpcs:disable SlevomatCodingStandard.Functions.UnusedParameter, SlevomatCodingStandard.Variables.UnusedVariable
+ *
  * @phpcs:disable Symfony.Commenting, PSR1.Files.SideEffects, Generic.CodeAnalysis.UnusedFunctionParameter
+ *
  * @phpcs:disable SlevomatCodingStandard.ControlStructures.LanguageConstructWithParentheses.UsedWithParentheses
+ *
  * @phpcs:disable SlevomatCodingStandard.Commenting, PSR12.Files.FileHeader.SpacingAfterDocblockBlock
+ *
  * @phpcs:disable PSR1.Classes.ClassDeclaration, SlevomatCodingStandard.Classes.RequireAbstractOrFinal
+ *
  * @phpcs:disable Universal.Classes.RequireFinalClass, SlevomatCodingStandard.Files.TypeNameMatchesFileName
+ *
  * @phpcs:disable Universal.PHP.DisallowExitDieParentheses, Universal.PHP.RequireExitDieParentheses
  *
  * @noinspection PhpEnforceDocCommentInspection, PhpRedundantOptionalArgumentInspection, PhpUnusedParameterInspection
@@ -24,7 +30,7 @@ declare(strict_types=1);
 
 mb_check_encoding($value);
 mb_chr($codepoint);
-mb_convert_case($str, MB_CASE_TITLE);
+mb_convert_case($str, \MB_CASE_TITLE);
 mb_convert_encoding($str, 'UTF-8');
 mb_convert_kana($str, 'KV');
 mb_decode_numericentity($str, $map);
@@ -35,7 +41,7 @@ mb_ltrim($str, $characters);
 mb_ord($str);
 mb_rtrim($str, $characters);
 mb_scrub($str);
-mb_str_pad($str, $length, ' ', STR_PAD_RIGHT);
+mb_str_pad($str, $length, ' ', \STR_PAD_RIGHT);
 mb_str_split($str, $length);
 mb_strcut($str, $start, $length);
 mb_strimwidth($str, $start, $width, '...');

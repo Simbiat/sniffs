@@ -33,29 +33,6 @@ final class PreferWhiteStringSniff implements Sniff
     private const string ALLOWED_FLAGS = 'imsxeADSUXJur';
 
     /**
-     * Registers the tokens that this sniff wants to listen for.
-     *
-     * An example return value for a sniff that wants to listen for whitespace
-     * and any comments would be:
-     *
-     * <code>
-     *    return array(
-     *        T_WHITESPACE,
-     *        T_DOC_COMMENT,
-     *        T_COMMENT,
-     *    );
-     * </code>
-     *
-     * @return array<int|string>
-     *
-     * @see    Tokens.php
-     */
-    public function register(): array
-    {
-        return [\T_STRING];
-    }
-
-    /**
      * Called when one of the token types that this sniff is listening for
      * is found.
      *
@@ -78,11 +55,11 @@ final class PreferWhiteStringSniff implements Sniff
      *    $phpcsFile->addError('Encountered an error', $stackPtr);
      * </code>
      *
-     * @param \PHP_CodeSniffer\Files\File $phpcsFile The PHP_CodeSniffer file where the
-     *                                               token was found.
-     * @param int                         $stackPtr  The position in the PHP_CodeSniffer
-     *                                               file's token stack where the token
-     *                                               was found.
+     * @param File $phpcsFile The PHP_CodeSniffer file where the
+     *                        token was found.
+     * @param int  $stackPtr  The position in the PHP_CodeSniffer
+     *                        file's token stack where the token
+     *                        was found.
      *
      * @return void Optionally returns a stack pointer. The sniff will not be
      *              called again on the current file until the returned stack
@@ -171,16 +148,43 @@ final class PreferWhiteStringSniff implements Sniff
     }
 
     /**
+     * Registers the tokens that this sniff wants to listen for.
+     *
+     * An example return value for a sniff that wants to listen for whitespace
+     * and any comments would be:
+     *
+     * <code>
+     *    return array(
+     *        T_WHITESPACE,
+     *        T_DOC_COMMENT,
+     *        T_COMMENT,
+     *    );
+     * </code>
+     *
+     * @return array<int|string>
+     *
+     * @see    Tokens.php
+     */
+    public function register(): array
+    {
+        return [\T_STRING];
+    }
+
+    /**
      * Content is the raw token text, quotes included, e.g. '/^\s*$/ui' or
      * "/^\s+$/". True for either quote style, and for either /^\s*$/ or
      * /^\s+$/ as the pattern core, with flags drawn exclusively from
      * ALLOWED_FLAGS.
+     *
+     * @param string $content
+     *
+     * @return bool
      */
     private static function isWhitespaceOnlyPattern(string $content): bool
     {
         // strip the surrounding quote char
         $inner = \mb_substr($content, 1, -1, 'UTF-8');
-        $core = array_find(['/^\s*$/', '/^\s+$/'], fn($candidate): bool => \str_starts_with($inner, $candidate));
+        $core = \array_find(['/^\s*$/', '/^\s+$/'], static fn($candidate): bool => \str_starts_with($inner, $candidate));
 
         if ($core === null) {
             return false;

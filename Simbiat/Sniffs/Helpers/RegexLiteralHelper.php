@@ -20,10 +20,23 @@ namespace Simbiat\Sniffs\Helpers;
 final class RegexLiteralHelper
 {
     /**
-     * @return null|array{flags: string, delimPos: int} `delimPos` is the
-     *                                                  offset of the *opening* delimiter within the raw token content
-     *                                                  (right after the quote), so callers can locate where the flags end
-     *                                                  (= end of string, before the closing quote) without re-parsing.
+     * Returns the token content with `$flag` inserted right before the
+     * closing quote (i.e. appended to the flags).
+     *
+     * @param string $tokenContent
+     * @param string $flag
+     *
+     * @return string
+     */
+    public static function appendFlag(string $tokenContent, string $flag): string
+    {
+        return \mb_substr($tokenContent, 0, -1, 'UTF-8').$flag.\mb_substr($tokenContent, -1, encoding: 'UTF-8');
+    }
+
+    /**
+     * @param string $tokenContent
+     *
+     * @return array{flags: string}|null
      */
     public static function parse(string $tokenContent): ?array
     {
@@ -58,14 +71,5 @@ final class RegexLiteralHelper
         return [
             'flags' => \mb_substr($inner, $last_delimiter + 1, encoding: 'UTF-8'),
         ];
-    }
-
-    /**
-     * Returns the token content with `$flag` inserted right before the
-     * closing quote (i.e. appended to the flags).
-     */
-    public static function appendFlag(string $tokenContent, string $flag): string
-    {
-        return \mb_substr($tokenContent, 0, -1, 'UTF-8').$flag.\mb_substr($tokenContent, -1, encoding: 'UTF-8');
     }
 }

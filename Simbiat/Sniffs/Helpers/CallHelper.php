@@ -15,10 +15,28 @@ use PHP_CodeSniffer\Files\File;
 final class CallHelper
 {
     /**
+     * @param array<string> $arguments
+     */
+    public static function hasNamedEncoding(array $arguments): bool
+    {
+        foreach ($arguments as $argument) {
+            $argument = \mb_trim($argument, encoding: 'UTF-8');
+            if (
+                \str_starts_with($argument, 'encoding:')
+                || \str_starts_with($argument, 'encoding :')
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Is this a function call or not?
      *
-     * @param \PHP_CodeSniffer\Files\File $phpcsFile
-     * @param int                         $stackPtr
+     * @param File $phpcsFile
+     * @param int  $stackPtr
      *
      * @return bool
      */
@@ -52,12 +70,14 @@ final class CallHelper
                 \T_FUNCTION,
             ],
             strict: true,
-        ) 
-            // ->func(), Class::func(), function func() {}
-;
+        );
     }
 
     /**
+     * @param File $phpcsFile
+     * @param int  $openParen
+     * @param int  $closeParen
+     *
      * @return array<string> Raw text of each top-level argument (commas inside
      *                       nested parens/brackets/braces are ignored).
      */
@@ -68,7 +88,7 @@ final class CallHelper
         $current = '';
         $arguments = [];
 
-        for ($iteration = ($openParen + 1); $iteration < $closeParen; ++$iteration) {
+        for ($iteration = $openParen + 1; $iteration < $closeParen; ++$iteration) {
             $content = $tokens[$iteration]['content'];
 
             if (\in_array($tokens[$iteration]['code'], [\T_OPEN_PARENTHESIS, \T_OPEN_SQUARE_BRACKET, \T_OPEN_CURLY_BRACKET], strict: true)) {
@@ -97,23 +117,5 @@ final class CallHelper
         }
 
         return $arguments;
-    }
-
-    /**
-     * @param array<string> $arguments
-     */
-    public static function hasNamedEncoding(array $arguments): bool
-    {
-        foreach ($arguments as $argument) {
-            $argument = \mb_trim($argument, encoding: 'UTF-8');
-            if (
-                \str_starts_with($argument, 'encoding:')
-                || \str_starts_with($argument, 'encoding :')
-            ) {
-                return true;
-            }
-        }
-
-        return false;
     }
 }

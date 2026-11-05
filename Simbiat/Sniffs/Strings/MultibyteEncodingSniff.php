@@ -18,6 +18,14 @@ use Simbiat\Sniffs\Helpers\CallHelper;
 final class MultibyteEncodingSniff implements Sniff
 {
     /**
+     * Functions whose encoding parameter is not literally named
+     * `encoding`. Everything else in FUNCTIONS uses `encoding`.
+     */
+    private const array ENCODING_PARAM_NAMES = [
+        'mb_convert_encoding' => 'from_encoding',
+    ];
+
+    /**
      * Functions that accept an explicit encoding argument, mapped to their
      * TOTAL parameter count (encoding included). `encoding` is the last
      * parameter in every one of these (verified against PHP 8.3/8.4 via
@@ -64,37 +72,6 @@ final class MultibyteEncodingSniff implements Sniff
     ];
 
     /**
-     * Functions whose encoding parameter is not literally named
-     * `encoding`. Everything else in FUNCTIONS uses `encoding`.
-     */
-    private const array ENCODING_PARAM_NAMES = [
-        'mb_convert_encoding' => 'from_encoding',
-    ];
-
-    /**
-     * Registers the tokens that this sniff wants to listen for.
-     *
-     * An example return value for a sniff that wants to listen for whitespace
-     * and any comments would be:
-     *
-     * <code>
-     *    return array(
-     *        T_WHITESPACE,
-     *        T_DOC_COMMENT,
-     *        T_COMMENT,
-     *    );
-     * </code>
-     *
-     * @return array<int|string>
-     *
-     * @see    Tokens.php
-     */
-    public function register(): array
-    {
-        return [\T_STRING, \T_NAME_FULLY_QUALIFIED];
-    }
-
-    /**
      * Called when one of the token types that this sniff is listening for
      * is found.
      *
@@ -117,11 +94,11 @@ final class MultibyteEncodingSniff implements Sniff
      *    $phpcsFile->addError('Encountered an error', $stackPtr);
      * </code>
      *
-     * @param \PHP_CodeSniffer\Files\File $phpcsFile The PHP_CodeSniffer file where the
-     *                                               token was found.
-     * @param int                         $stackPtr  The position in the PHP_CodeSniffer
-     *                                               file's token stack where the token
-     *                                               was found.
+     * @param File $phpcsFile The PHP_CodeSniffer file where the
+     *                        token was found.
+     * @param int  $stackPtr  The position in the PHP_CodeSniffer
+     *                        file's token stack where the token
+     *                        was found.
      *
      * @return void Optionally returns a stack pointer. The sniff will not be
      *              called again on the current file until the returned stack
@@ -190,5 +167,28 @@ final class MultibyteEncodingSniff implements Sniff
             : '';
         $phpcsFile->fixer->addContentBefore($close_parenthesis, $prefix.$param_name.": 'UTF-8'");
         $phpcsFile->fixer->endChangeset();
+    }
+
+    /**
+     * Registers the tokens that this sniff wants to listen for.
+     *
+     * An example return value for a sniff that wants to listen for whitespace
+     * and any comments would be:
+     *
+     * <code>
+     *    return array(
+     *        T_WHITESPACE,
+     *        T_DOC_COMMENT,
+     *        T_COMMENT,
+     *    );
+     * </code>
+     *
+     * @return array<int|string>
+     *
+     * @see    Tokens.php
+     */
+    public function register(): array
+    {
+        return [\T_STRING, \T_NAME_FULLY_QUALIFIED];
     }
 }
