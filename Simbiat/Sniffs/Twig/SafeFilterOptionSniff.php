@@ -76,12 +76,14 @@ final class SafeFilterOptionSniff implements Sniff
 
         if (
             $class_name_ptr === false
-            || $tokens[$class_name_ptr]['code'] !== \T_STRING
+            || !\in_array($tokens[$class_name_ptr]['code'], [\T_STRING, \T_NAME_FULLY_QUALIFIED], strict: true)
         ) {
             return;
         }
 
-        $class_name = $tokens[$class_name_ptr]['content'];
+        // `new \TwigFunction` is a single T_NAME_FULLY_QUALIFIED token: strip its leading backslash.
+        // A longer name (`\Twig\TwigFunction`) will not match the list, so it stays ignored.
+        $class_name = \ltrim($tokens[$class_name_ptr]['content'], '\\');
         if (!\in_array($class_name, self::CLASSES, strict: true)) {
             return;
         }

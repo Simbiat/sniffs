@@ -70,7 +70,8 @@ final class PreferWhiteStringSniff implements Sniff
     {
         $tokens = $phpcsFile->getTokens();
 
-        if (\mb_strtolower($tokens[$stackPtr]['content'], 'UTF-8') !== 'preg_match') {
+        // Strip the leading backslash of T_NAME_FULLY_QUALIFIED.
+        if (\mb_strtolower(\ltrim($tokens[$stackPtr]['content'], '\\'), 'UTF-8') !== 'preg_match') {
             return;
         }
 
@@ -167,7 +168,7 @@ final class PreferWhiteStringSniff implements Sniff
      */
     public function register(): array
     {
-        return [\T_STRING];
+        return [\T_STRING, \T_NAME_FULLY_QUALIFIED];
     }
 
     /**

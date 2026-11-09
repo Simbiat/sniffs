@@ -107,35 +107,15 @@ final class MultibyteEncodingSniff implements Sniff
      */
     public function process(File $phpcsFile, int $stackPtr): void
     {
-        $tokens = $phpcsFile->getTokens();
-        $name = $tokens[$stackPtr]['content'];
-
-        // Strip the leading backslash of T_NAME_FULLY_QUALIFIED.
-        $name = \ltrim($name, '\\');
-
-        $function_name = \mb_strtolower($name, 'UTF-8');
-
-        if (!\array_key_exists($function_name, self::FUNCTIONS)) {
+        $call = CallHelper::findCall($phpcsFile, $stackPtr, self::FUNCTIONS);
+        if ($call === null) {
             return;
         }
 
-        if (!CallHelper::isFunctionCall($phpcsFile, $stackPtr)) {
-            return;
-        }
-
-        $open_parenthesis = $phpcsFile->findNext(\T_WHITESPACE, $stackPtr + 1, null, true);
-        if (
-            !$open_parenthesis
-            || $tokens[$open_parenthesis]['code'] !== \T_OPEN_PARENTHESIS
-        ) {
-            return;
-        }
-
-        $close_parenthesis = $tokens[$open_parenthesis]['parenthesis_closer'];
+        ['name' => $function_name, 'open' => $open_parenthesis, 'close' => $close_parenthesis] = $call;
         $params = CallHelper::splitArguments($phpcsFile, $open_parenthesis, $close_parenthesis);
 
         // Encoding slot already reached positionally, or supplied by name.
-        /* @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
         if (
             \count($params) >= self::FUNCTIONS[$function_name]
             || CallHelper::hasNamedEncoding($params)
@@ -154,7 +134,6 @@ final class MultibyteEncodingSniff implements Sniff
             return;
         }
 
-        /** @var string $function_name */
         $param_name = self::ENCODING_PARAM_NAMES[$function_name] ?? 'encoding';
 
         $phpcsFile->fixer->beginChangeset();
@@ -162,7 +141,8 @@ final class MultibyteEncodingSniff implements Sniff
         // optional parameters sit between the last given argument and
         // the encoding slot, so this never needs to know the exact
         // position — only that the slot is not yet filled (checked above).
-        $prefix = \count($params) > 0 && \mb_trim(\end($params), encoding: 'UTF-8') !== ''
+        // A trailing comma (`f($a, $b,)`) already separates the new argument from the last one.
+        $prefix = !CallHelper::hasTrailingComma($phpcsFile, $open_parenthesis, $close_parenthesis) && \count($params) > 0 && \mb_trim(\end($params), encoding: 'UTF-8') !== ''
             ? ', '
             : '';
         $phpcsFile->fixer->addContentBefore($close_parenthesis, $prefix.$param_name.": 'UTF-8'");

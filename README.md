@@ -6,7 +6,7 @@ Custom sniffs PHP Code Sniffer, that are used in [simbiat.eu](https://github.com
 
 | Sniff                                            | Code                                                                                                                                                                                                                                                                                                                                                                                                    | Fixable? |
 |--------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|
-| `Simbiat.Strings.PreferMultibyte`                | Recommend using multibyte (`mb_*`) fucntions instead of single-byte functions. Useful for projects that deal with multi-langauge strings and emojis. Using arguments with a name which one of `binary`, `blob`, `bytes`, `raw`, `hash`, `digest`, `checksum`, `signature`, `ciphertext`, `plaintext`, `salt`, `iv`, `key`, will serve as a hint, that this is binary data, and thus suppress the sniff. | No       |
+| `Simbiat.Strings.PreferMultibyte`                | Recommend using multibyte (`mb_*`) fucntions instead of single-byte functions. Useful for projects that deal with multi-langauge strings and emojis. Using arguments with a name that contains one of `binary`, `blob`, `bytes`, `raw`, `hash`, `digest`, `checksum`, `signature`, `ciphertext`, `plaintext`, `salt`, `iv`, `key` as a whole word (for example `$rawBody`, `$user_key`, `$hashes`, but not `$archive`), will serve as a hint, that this is binary data, and thus suppress the sniff. | No       |
 | `Simbiat.Strings.MultibyteEncoding`              | Highlights `mb_*` calls missing an explicit encoding. `UTF-8` is recommended in most modern environments.                                                                                                                                                                                                                                                                                               | Yes      |
 | `Simbiat.PHP.ExitCode`                           | Suggests adding a status code to `exit`/`die` without one for the sake of being explicit.                                                                                                                                                                                                                                                                                                               | Yes      |
 | `Simbiat.PHP.PreferWhiteString`                  | Suggest using `\Simbiat\StringHelpers\Sanitize::whiteString($string)` call instead of `preg_match('/^\s*$/', $string) === 1` to capture more whitespace characters.                                                                                                                                                                                                                                     | No       |
@@ -15,3 +15,24 @@ Custom sniffs PHP Code Sniffer, that are used in [simbiat.eu](https://github.com
 | `Simbiat.SQL.DateTimeFunctions.MissingPrecision` | Enforce explicit precission argument for date and time functions in SQL literals. `0` by default.                                                                                                                                                                                                                                                                                                       | Yes      |
 | `Simbiat.Regex.MissingUnicodeFlag`               | Highlights `preg_*()` literal patterns missing the `u` flag. Useful in projects dealing with unicode.                                                                                                                                                                                                                                                                                                   | Yes      |
 | `Simbiat.Regex.MissingCaselessRestrictFlag`      | Highlights `preg_*()` literal patterns that have both `u` (`PCRE_UTF8`) and `i` (`PCRE_CASELESS`) but not `r` (`PCRE2_EXTRA_CASELESS_RESTRICT`) to prevent matching of `K` (Kelvin character), when you are searching for `k` and `K`. Results in stricter matches.                                                                                                                                     | Yes      |
+
+## Testing
+
+```shell
+composer install
+vendor/bin/phpunit
+```
+
+Each sniff has a test class in `tests/<Category>/<Sniff>Test.php` and fixtures in `tests/Fixtures/<Category>/<Sniff>/*.inc`. The test class only names the sniff and its codes. `tests/SniffTestCase.php` does the rest: it runs **only that sniff** on every fixture and compares the results to the directives written in the fixture (all in `//` comments):
+
+| Directive                         | Meaning                                                                                                         |
+|-----------------------------------|-----------------------------------------------------------------------------------------------------------------|
+| `// @expect Code.A Code.B`        | This line must give these results (full source codes). A line without `@expect` must give **no** result.        |
+| `// @expect-next Code.A`          | The next line must give these results. Use it for multi-line strings and heredocs.                              |
+| `// @expect+2 Code.A`             | The same, N lines below.                                                                                        |
+| `// @property name=value`         | Set a sniff property for the whole fixture (for example `precision=6`).                                         |
+| `// @known-issue Text`            | The fixture describes **desired** behavior that the sniff does not have yet. Tests are "incomplete", not failed. |
+
+If `Fixture.inc.fixed` exists, the fixer output must be equal to it. If it does not exist, the fixer must not change the fixture. Fixer output must always be valid PHP.
+
+To add a sniff: create the sniff, register it in `Simbiat/ruleset.xml`, add it to the table above, then add a test class and at least one fixture. `tests/RulesetTest.php` fails until all of these exist.

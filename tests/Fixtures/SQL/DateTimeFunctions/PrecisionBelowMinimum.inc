@@ -1,0 +1,9 @@
+<?php
+
+declare(strict_types=1);
+
+// @property precision=-3
+
+// === A negative precision is treated as 0 ===
+$sql = 'SELECT NOW() FROM t'; // @expect Simbiat.SQL.DateTimeFunctions.MissingPrecision
+$sql = 'SELECT NOW(0) FROM t';

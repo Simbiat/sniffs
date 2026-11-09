@@ -24,10 +24,21 @@
         "ext-mbstring": "*",
         "squizlabs/php_codesniffer": "^4.0.4"
     },
+    "require-dev": {
+        "phpunit/phpunit": "^13.0"
+    },
     "autoload": {
         "psr-4": {
             "\\": ""
         }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Simbiat\\Sniffs\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit"
     },
     "support": {
         "issues": "https://github.com/Simbiat/sniffs/issues",

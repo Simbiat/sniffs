@@ -1,0 +1,41 @@
+<?php
+
+declare(strict_types=1);
+
+// === u + i, missing r: every checked function ===
+preg_filter('/foo/uir', $replacement, $subject); // @expect Simbiat.Regex.MissingCaselessRestrictFlag.MissingCaselessRestrictFlag
+preg_grep('/foo/uir', $array); // @expect Simbiat.Regex.MissingCaselessRestrictFlag.MissingCaselessRestrictFlag
+preg_match('/foo/uir', $subject, $matches); // @expect Simbiat.Regex.MissingCaselessRestrictFlag.MissingCaselessRestrictFlag
+preg_match_all('/foo/uir', $subject, $matches); // @expect Simbiat.Regex.MissingCaselessRestrictFlag.MissingCaselessRestrictFlag
+preg_replace('/foo/uir', $replacement, $subject); // @expect Simbiat.Regex.MissingCaselessRestrictFlag.MissingCaselessRestrictFlag
+preg_replace_callback('/foo/uir', $callback, $subject); // @expect Simbiat.Regex.MissingCaselessRestrictFlag.MissingCaselessRestrictFlag
+preg_split('/foo/uir', $subject); // @expect Simbiat.Regex.MissingCaselessRestrictFlag.MissingCaselessRestrictFlag
+
+// === u + i, missing r, in different orders and with other flags ===
+preg_match('/foo/iur', $subject, $matches); // @expect Simbiat.Regex.MissingCaselessRestrictFlag.MissingCaselessRestrictFlag
+preg_match('/foo/uimr', $subject, $matches); // @expect Simbiat.Regex.MissingCaselessRestrictFlag.MissingCaselessRestrictFlag
+preg_match('/foo/muisr', $subject, $matches); // @expect Simbiat.Regex.MissingCaselessRestrictFlag.MissingCaselessRestrictFlag
+
+// === Other delimiters and quote styles ===
+preg_match('#foo#uir', $subject); // @expect Simbiat.Regex.MissingCaselessRestrictFlag.MissingCaselessRestrictFlag
+preg_match("/foo/uir", $subject); // @expect Simbiat.Regex.MissingCaselessRestrictFlag.MissingCaselessRestrictFlag
+preg_match('/a\/b/uir', $subject); // @expect Simbiat.Regex.MissingCaselessRestrictFlag.MissingCaselessRestrictFlag
+
+// === Already has r: must NOT be flagged ===
+preg_match('/foo/uir', $subject, $matches);
+preg_match('/foo/uri', $subject, $matches);
+preg_match('/foo/ruim', $subject, $matches);
+
+// === Missing u or i: this sniff stays silent (MissingUnicodeFlag handles the first case) ===
+preg_match('/foo/', $subject, $matches);
+preg_match('/foo/i', $subject, $matches);
+preg_match('/foo/u', $subject, $matches);
+preg_match('/foo/um', $subject, $matches);
+
+// === Not a literal pattern, or an incomplete call: must NOT be flagged ===
+preg_match($pattern, $subject, $matches);
+preg_match('/foo/ui');
+preg_replace_callback_array(['/foo/ui' => $callback], $subject);
+
+// === Not the global function: must NOT be flagged ===
+Foo\preg_match('/foo/ui', $subject);

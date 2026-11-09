@@ -28,6 +28,37 @@ final class PregCallHelper
     ];
 
     /**
+     * Everything that the regex sniffs need to know about a `preg_*()` call with a literal pattern.
+     *
+     * @param File $phpcsFile
+     * @param int  $stackPtr  Pointer to the function name token (T_STRING or T_NAME_FULLY_QUALIFIED).
+     *
+     * @return array{function: string, pointer: int, content: string, flags: string}|null
+     *         `function` is lowercase, `pointer` and `content` are of the pattern token, `flags` are its flags.
+     *         Null if this is not a `preg_*()` call with a literal pattern that can be understood.
+     */
+    public static function findLiteralPattern(File $phpcsFile, int $stackPtr): ?array
+    {
+        $call = CallHelper::findCall($phpcsFile, $stackPtr, self::FUNCTIONS);
+        if ($call === null) {
+            return null;
+        }
+
+        $pattern_ptr = self::findPatternToken($phpcsFile, $stackPtr);
+        if ($pattern_ptr === null) {
+            return null;
+        }
+
+        $content = $phpcsFile->getTokens()[$pattern_ptr]['content'];
+        $parsed = RegexLiteralHelper::parse($content);
+        if ($parsed === null) {
+            return null;
+        }
+
+        return ['function' => $call['name'], 'pointer' => $pattern_ptr, 'content' => $content, 'flags' => $parsed['flags']];
+    }
+
+    /**
      * @param File $phpcsFile
      * @param int  $functionNamePtr
      *

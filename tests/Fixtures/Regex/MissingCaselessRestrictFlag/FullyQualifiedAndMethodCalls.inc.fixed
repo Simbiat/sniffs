@@ -1,0 +1,10 @@
+<?php
+
+declare(strict_types=1);
+
+// === Fully-qualified call: flagged, same as the unqualified one ===
+\preg_match('/foo/uir', $subject, $matches); // @expect Simbiat.Regex.MissingCaselessRestrictFlag.MissingCaselessRestrictFlag
+
+// === Method / static calls named like a preg_* function: ignored ===
+$object->preg_match('/foo/ui', $subject);
+Foo::preg_match('/foo/ui', $subject);

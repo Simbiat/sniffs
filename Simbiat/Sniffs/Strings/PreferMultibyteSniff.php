@@ -104,35 +104,16 @@ final class PreferMultibyteSniff implements Sniff
      */
     public function process(File $phpcsFile, int $stackPtr): void
     {
-        $tokens = $phpcsFile->getTokens();
-        $name = $tokens[$stackPtr]['content'];
-
-        // Strip the leading backslash of T_NAME_FULLY_QUALIFIED.
-        $name = \ltrim($name, '\\');
-
-        $function_name = \mb_strtolower($name, 'UTF-8');
-
-        if (!\array_key_exists($function_name, self::MAP)) {
+        $call = CallHelper::findCall($phpcsFile, $stackPtr, self::MAP);
+        if ($call === null) {
             return;
         }
 
-        if (!CallHelper::isFunctionCall($phpcsFile, $stackPtr)) {
+        $function_name = $call['name'];
+        if (self::firstArgumentLooksBinary($phpcsFile, $call['open'])) {
             return;
         }
 
-        $open_parenthesis = $phpcsFile->findNext(\T_WHITESPACE, $stackPtr + 1, null, true);
-        if (
-            !$open_parenthesis
-            || $tokens[$open_parenthesis]['code'] !== \T_OPEN_PARENTHESIS
-        ) {
-            return;
-        }
-
-        if (self::firstArgumentLooksBinary($phpcsFile, $open_parenthesis)) {
-            return;
-        }
-
-        /* @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
         $phpcsFile->addWarning(
             'Consider %s() instead of %s(), unless this is deliberately operating on binary/single-byte data.',
             $stackPtr,
@@ -184,8 +165,20 @@ final class PreferMultibyteSniff implements Sniff
             return false;
         }
 
-        $name = \mb_strtolower($tokens[$first_arg_ptr]['content'], 'UTF-8');
+        // Split `$rawBody`, `$user_key` or `$IV_BYTES` into words, and compare whole words only.
+        // A substring match would also catch `$archive` (iv), `$monkey` (key) or `$crawler` (raw).
+        $words = \preg_split('/_+|(?<=[a-z0-9])(?=[A-Z])/', \ltrim($tokens[$first_arg_ptr]['content'], '$'), -1, \PREG_SPLIT_NO_EMPTY);
+        if ($words === false) {
+            return false;
+        }
 
-        return \array_any(self::NAME_HINTS, static fn(string $hint): bool => \str_contains($name, $hint));
+        foreach ($words as $word) {
+            $word = \mb_strtolower($word, 'UTF-8');
+            if (\in_array($word, self::NAME_HINTS, strict: true) || \in_array(\preg_replace('/(?:es|s)$/', '', $word), self::NAME_HINTS, strict: true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

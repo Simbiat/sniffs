@@ -53,38 +53,23 @@ final class MissingUnicodeFlagSniff implements Sniff
      */
     public function process(File $phpcsFile, int $stackPtr): void
     {
-        $tokens = $phpcsFile->getTokens();
-        $function_name = \mb_strtolower($tokens[$stackPtr]['content'], 'UTF-8');
-
-        if (!\in_array($function_name, PregCallHelper::FUNCTIONS, strict: true)) {
-            return;
-        }
-
-        $pattern_ptr = PregCallHelper::findPatternToken($phpcsFile, $stackPtr);
-        if ($pattern_ptr === null) {
-            return;
-        }
-
-        $parsed = RegexLiteralHelper::parse($tokens[$pattern_ptr]['content']);
+        $pattern = PregCallHelper::findLiteralPattern($phpcsFile, $stackPtr);
         if (
-            $parsed === null
-            || \str_contains($parsed['flags'], 'u')
+            $pattern === null
+            || \str_contains($pattern['flags'], 'u')
         ) {
             return;
         }
 
         $fix = $phpcsFile->addFixableWarning(
             "Pattern for %s() is missing the Unicode ('u') flag.",
-            $pattern_ptr,
+            $pattern['pointer'],
             'MissingUnicodeFlag',
-            [$function_name],
+            [$pattern['function']],
         );
 
         if ($fix) {
-            $phpcsFile->fixer->replaceToken(
-                $pattern_ptr,
-                RegexLiteralHelper::appendFlag($tokens[$pattern_ptr]['content'], 'u'),
-            );
+            $phpcsFile->fixer->replaceToken($pattern['pointer'], RegexLiteralHelper::appendFlag($pattern['content'], 'u'));
         }
     }
 
@@ -108,6 +93,6 @@ final class MissingUnicodeFlagSniff implements Sniff
      */
     public function register(): array
     {
-        return [\T_STRING];
+        return [\T_STRING, \T_NAME_FULLY_QUALIFIED];
     }
 }

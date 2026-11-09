@@ -61,24 +61,12 @@ final class MissingCaselessRestrictFlagSniff implements Sniff
      */
     public function process(File $phpcsFile, int $stackPtr): void
     {
-        $tokens = $phpcsFile->getTokens();
-        $function_name = \mb_strtolower($tokens[$stackPtr]['content'], 'UTF-8');
-
-        if (!\in_array($function_name, PregCallHelper::FUNCTIONS, strict: true)) {
+        $pattern = PregCallHelper::findLiteralPattern($phpcsFile, $stackPtr);
+        if ($pattern === null) {
             return;
         }
 
-        $pattern_ptr = PregCallHelper::findPatternToken($phpcsFile, $stackPtr);
-        if ($pattern_ptr === null) {
-            return;
-        }
-
-        $parsed = RegexLiteralHelper::parse($tokens[$pattern_ptr]['content']);
-        if ($parsed === null) {
-            return;
-        }
-
-        $flags = $parsed['flags'];
+        $flags = $pattern['flags'];
         if (
             !\str_contains($flags, 'u')
             || !\str_contains($flags, 'i')
@@ -89,16 +77,13 @@ final class MissingCaselessRestrictFlagSniff implements Sniff
 
         $fix = $phpcsFile->addFixableWarning(
             "Pattern for %s() combines 'u' and 'i' without the caseless restrict ('r') flag.",
-            $pattern_ptr,
+            $pattern['pointer'],
             'MissingCaselessRestrictFlag',
-            [$function_name],
+            [$pattern['function']],
         );
 
         if ($fix) {
-            $phpcsFile->fixer->replaceToken(
-                $pattern_ptr,
-                RegexLiteralHelper::appendFlag($tokens[$pattern_ptr]['content'], 'r'),
-            );
+            $phpcsFile->fixer->replaceToken($pattern['pointer'], RegexLiteralHelper::appendFlag($pattern['content'], 'r'));
         }
     }
 
@@ -122,6 +107,6 @@ final class MissingCaselessRestrictFlagSniff implements Sniff
      */
     public function register(): array
     {
-        return [\T_STRING];
+        return [\T_STRING, \T_NAME_FULLY_QUALIFIED];
     }
 }
