@@ -18,6 +18,12 @@ use Simbiat\Sniffs\Tests\Support\PhpcsFactory;
 #[UsesClass(RegexLiteralHelper::class)]
 final class PregCallHelperTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        // Load PHPCS and its token constants before the helper classes are compiled (see PhpcsFactory::loadPhpcs()).
+        PhpcsFactory::loadPhpcs();
+    }
+
     /**
      * Every preg_* function of PHP takes a pattern, except these three.
      * If PHP adds a new one, this test fails, and tells you to add it to the list.

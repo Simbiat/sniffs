@@ -14,6 +14,12 @@ use Simbiat\Sniffs\Tests\Support\PhpcsFactory;
 #[CoversClass(CallHelper::class)]
 final class CallHelperTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        // Load PHPCS and its token constants before the helper classes are compiled (see PhpcsFactory::loadPhpcs()).
+        PhpcsFactory::loadPhpcs();
+    }
+
     /**
      * @return array<string, array{list<string>, bool}>
      */
@@ -72,6 +78,12 @@ final class CallHelperTest extends TestCase
         self::assertSame($expected, CallHelper::isFunctionCall($file, self::tokenPointer($file, $tokenContent)));
     }
 
+    public function testIsFunctionCallOnTheFirstToken(): void
+    {
+        // Nothing comes before the first token, so it cannot be a method call or a definition.
+        self::assertTrue(CallHelper::isFunctionCall(PhpcsFactory::parseString('strlen($a);'), 0));
+    }
+
     /**
      * Each case: code, the exact token content of the function name, accepted functions, expected name (null = no match).
      *
@@ -93,6 +105,8 @@ final class CallHelperTest extends TestCase
             'static call' => ['Foo::strlen($a);', 'strlen', ['strlen'], null],
             'function definition' => ['function strlen($a) {}', 'strlen', ['strlen'], null],
             'no parentheses' => ['$x = strlen;', 'strlen', ['strlen'], null],
+            'the name is the last token' => ['strlen', 'strlen', ['strlen'], null],
+            'the parenthesis is never closed' => ['strlen($a', 'strlen', ['strlen'], null],
             'a comment between the name and the parenthesis' => ['strlen /* c */ ($a);', 'strlen', ['strlen'], null],
         ];
     }

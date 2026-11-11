@@ -8,10 +8,17 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Simbiat\Sniffs\Helpers\RegexLiteralHelper;
+use Simbiat\Sniffs\Tests\Support\PhpcsFactory;
 
 #[CoversClass(RegexLiteralHelper::class)]
 final class RegexLiteralHelperTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        // Load PHPCS and its token constants before the helper classes are compiled (see PhpcsFactory::loadPhpcs()).
+        PhpcsFactory::loadPhpcs();
+    }
+
     /**
      * Input is the raw token content, quotes included.
      *

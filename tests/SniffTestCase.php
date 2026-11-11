@@ -139,7 +139,8 @@ abstract class SniffTestCase extends TestCase
         self::assertSame($expected, $actual, 'Fixer output is different from the expected file.');
 
         // The fixed code must be stable: the sniff must not want to fix it again.
-        if (\is_file($fixture.'.fixed')) {
+        // This applies only when the fixer changed the file (a fixture can show a problem that the fixer leaves alone on purpose).
+        if ($expected !== self::read($fixture)) {
             $again = PhpcsFactory::checkString($expected, $this->environment($fixture));
 
             self::assertSame(0, $again->getFixableCount(), 'The fixed file still has fixable results: the fix is not stable.');

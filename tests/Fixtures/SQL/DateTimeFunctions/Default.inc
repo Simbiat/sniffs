@@ -25,6 +25,22 @@ $sql = 'SELECT UTC_DATE FROM t'; // @expect Simbiat.SQL.DateTimeFunctions.Prefer
 // === Several functions in one string: one result per code, all occurrences are fixed ===
 $sql = 'SELECT NOW(), UTC_TIMESTAMP(), CURRENT_TIME FROM t'; // @expect Simbiat.SQL.DateTimeFunctions.PreferCurrent Simbiat.SQL.DateTimeFunctions.MissingPrecision
 
+// === One correct and one wrong occurrence in the same string: only the wrong one is changed ===
+$sql = 'SELECT NOW(0), NOW() FROM t'; // @expect Simbiat.SQL.DateTimeFunctions.MissingPrecision
+
+// === A backslash before the closing quote: an escaped backslash ends nothing, an escaped quote does not end the string ===
+$sql = 'SELECT NOW() \\'; // @expect Simbiat.SQL.DateTimeFunctions.MissingPrecision
+// @expect-next Simbiat.SQL.DateTimeFunctions.MissingPrecision
+$sql = 'SELECT NOW()
+    WHERE name = \'x\'
+    AND 1';
+
+// === Multibyte characters inside a comment must not shift the changes ===
+// @expect-next Simbiat.SQL.DateTimeFunctions.MissingPrecision
+$sql = 'SELECT 1 -- ünïcödé
+, NOW() FROM t';
+$sql = 'SELECT /* 日本語 */ NOW() FROM t'; // @expect Simbiat.SQL.DateTimeFunctions.MissingPrecision
+
 // === Every SQL keyword that opens the gate ===
 $sql = 'INSERT INTO t (created) VALUES (NOW())'; // @expect Simbiat.SQL.DateTimeFunctions.MissingPrecision
 $sql = 'UPDATE t SET updated = NOW()'; // @expect Simbiat.SQL.DateTimeFunctions.MissingPrecision

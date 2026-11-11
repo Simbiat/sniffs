@@ -144,7 +144,7 @@ final class DateTimeFunctionsSniff implements Sniff
 
         $masked = \preg_replace_callback(
             self::COMMENT_PATTERN,
-            static fn(array $m): string => \str_repeat(' ', \mb_strlen($m[0], 'UTF-8')),
+            static fn(array $m): string => \str_repeat(' ', \strlen($m[0])), // Bytes, not characters: the offsets below are byte offsets.
             $body,
         );
 
@@ -292,13 +292,8 @@ final class DateTimeFunctionsSniff implements Sniff
         $edits = [];
         $target = (string) $this->normalisedPrecision();
 
-        $matching_result = \preg_match_all(self::PRECISION_FIX_PATTERN, $masked, $matches, \PREG_OFFSET_CAPTURE);
-        if (
-            $matching_result === false
-            || $matching_result < 1
-        ) {
-            return $edits;
-        }
+        // On "no match" or on a PCRE error preg_match_all() leaves empty arrays in $matches, so the loop does nothing.
+        \preg_match_all(self::PRECISION_FIX_PATTERN, $masked, $matches, \PREG_OFFSET_CAPTURE);
 
         foreach ($matches[0] as $iteration => [$full_match, $offset]) {
             $digit = $matches[3][$iteration][0] ?? '';
@@ -331,13 +326,8 @@ final class DateTimeFunctionsSniff implements Sniff
     {
         $edits = [];
 
-        $matching_result = \preg_match_all(self::UTC_DETECT_PATTERN, $masked, $matches, \PREG_OFFSET_CAPTURE);
-        if (
-            $matching_result === false
-            || $matching_result < 1
-        ) {
-            return $edits;
-        }
+        // On "no match" or on a PCRE error preg_match_all() leaves empty arrays in $matches, so the loop does nothing.
+        \preg_match_all(self::UTC_DETECT_PATTERN, $masked, $matches, \PREG_OFFSET_CAPTURE);
 
         foreach ($matches[0] as $iteration => [$full_match, $offset]) {
             $utc_prefix = $matches[1][$iteration][0];
@@ -446,35 +436,16 @@ final class DateTimeFunctionsSniff implements Sniff
                 continue;
             }
 
-            $utc = null;
-            $precision = null;
-            foreach ($group as $edit) {
-                if ($edit['type'] === 'utc') {
-                    $utc = $edit;
-                }
-
-                if ($edit['type'] === 'precision') {
-                    $precision = $edit;
-                }
-            }
-
-            if (
-                $utc !== null
-                && $precision !== null
-            ) {
-                $merged[] = [
-                    'length' => \max($utc['length'], $precision['length']),
-                    'offset' => $offset,
-                    'replacement' => $utc['replacement'].'('.$precision['target'].')',
-                    'type' => 'merged',
-                ];
-
-                continue;
-            }
-
-            // Shouldn't normally happen (would mean two edits of the same
-            // type landed on the same offset) - don't silently drop data.
-            $merged[] = $group[0];
+            // Two edits of the same type cannot start at the same offset, so these two are one `utc` and one `precision` edit.
+            // Sorting by type (descending) puts `utc` first.
+            \usort($group, static fn(array $a, array $b): int => \strcmp($b['type'], $a['type']));
+            [$utc, $precision] = $group;
+            $merged[] = [
+                'length' => \max($utc['length'], $precision['length']),
+                'offset' => $offset,
+                'replacement' => $utc['replacement'].'('.$precision['target'].')',
+                'type' => 'merged',
+            ];
         }
 
         return $merged;

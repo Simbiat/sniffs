@@ -49,4 +49,11 @@ final class PreferWhiteStringTest extends SniffTestCase
             $messages[3][0]['message'],
         );
     }
+
+    public function testCodeThatEndsAfterTheFunctionNameIsIgnored(): void
+    {
+        $file = PhpcsFactory::checkString('<?php preg_match', PhpcsFactory::forSniff(static::sniffCode()));
+
+        self::assertSame([], self::messages($file));
+    }
 }

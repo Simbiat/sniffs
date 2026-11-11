@@ -34,14 +34,6 @@ final class CallHelper
     }
 
     /**
-     * Is this a function call or not?
-     *
-     * @param File $phpcsFile
-     * @param int  $stackPtr
-     *
-     * @return bool
-     */
-    /**
      * Check that the token is a call of one of the given functions, and find the parentheses of the call.
      *
      * Both `strlen(...)` (T_STRING) and `\strlen(...)` (T_NAME_FULLY_QUALIFIED) are accepted.
@@ -82,31 +74,27 @@ final class CallHelper
      */
     public static function hasTrailingComma(File $phpcsFile, int $openParenthesis, int $closeParenthesis): bool
     {
-        $last = $phpcsFile->findPrevious(Tokens::EMPTY_TOKENS, $closeParenthesis - 1, $openParenthesis, true);
+        $last = $phpcsFile->findPrevious(Tokens::EMPTY_TOKENS, $closeParenthesis - 1, $openParenthesis + 1, true);
 
         return $last !== false && $phpcsFile->getTokens()[$last]['code'] === \T_COMMA;
     }
 
+    /**
+     * Is this a function call or not?
+     *
+     * A name after `->`, `?->`, `::` or `function` is a method call, a static call or a definition, not a call of a global function.
+     * The check does not look at the parentheses (see {@see self::findCall()} for that).
+     *
+     * @param File $phpcsFile
+     * @param int  $stackPtr
+     *
+     * @return bool
+     */
     public static function isFunctionCall(File $phpcsFile, int $stackPtr): bool
     {
         $tokens = $phpcsFile->getTokens();
 
         $prev = $phpcsFile->findPrevious(\T_WHITESPACE, $stackPtr - 1, null, true);
-
-        if (
-            $prev !== false
-            && $tokens[$prev]['code'] === \T_NS_SEPARATOR
-        ) {
-            // PHPCS backfills PHP 8's T_NAME_FULLY_QUALIFIED / T_NAME_QUALIFIED
-            // tokens into T_NS_SEPARATOR + T_STRING sequences, so `\strlen(`
-            // and `Foo\strlen(` look identical at this point. The only way
-            // to tell them apart is checking what comes before the separator.
-            $before_separator = $phpcsFile->findPrevious(\T_WHITESPACE, $prev - 1, null, true);
-
-            // Foo\strlen(...) or namespace\strlen(...) — a namespaced
-            // function, not necessarily the same one. Leave it alone.
-            return $before_separator === false || !\in_array($tokens[$before_separator]['code'], [\T_STRING, \T_NAMESPACE], strict: true);
-        }
 
         return $prev === false || !\in_array(
                 $tokens[$prev]['code'],

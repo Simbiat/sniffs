@@ -12,9 +12,9 @@ $f = preg_match('/^\s*$/', $key, $matches) === 1; // @expect Simbiat.PHP.PreferW
 $g = preg_match('/^\s*$/u', $this->getValue()) === 1; // @expect Simbiat.PHP.PreferWhiteString.PreferWhiteString
 // @expect-next Simbiat.PHP.PreferWhiteString.PreferWhiteString
 $h = preg_match(
-    '/^\s*$/u',
-    $key,
-) === 1;
+        '/^\s*$/u',
+        $key,
+    ) === 1;
 
 if (preg_match('/^\s*$/u', $value) === 1) { // @expect Simbiat.PHP.PreferWhiteString.PreferWhiteString
     return;
@@ -42,6 +42,8 @@ $s = 1 === preg_match('/^\s*$/', $key);
 
 // === Incomplete call: must NOT be flagged ===
 $t = preg_match('/^\s*$/') === 1;
+$t = preg_match('/^\s*$/', ) === 1;
+$t = preg_match; // the name is not followed by a parenthesis
 
 // === Not the global function: must NOT be flagged ===
 $u = $object->preg_match('/^\s*$/', $key) === 1;

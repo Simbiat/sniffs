@@ -167,14 +167,11 @@ final class PreferMultibyteSniff implements Sniff
 
         // Split `$rawBody`, `$user_key` or `$IV_BYTES` into words, and compare whole words only.
         // A substring match would also catch `$archive` (iv), `$monkey` (key) or `$crawler` (raw).
-        $words = \preg_split('/_+|(?<=[a-z0-9])(?=[A-Z])/', \ltrim($tokens[$first_arg_ptr]['content'], '$'), -1, \PREG_SPLIT_NO_EMPTY);
-        if ($words === false) {
-            return false;
-        }
+        // The patterns are constant and the subject is a variable name, so preg_replace() cannot fail here.
+        $name = (string)\preg_replace('/(?<=[a-z0-9])(?=[A-Z])/', '_', \ltrim($tokens[$first_arg_ptr]['content'], '$'));
 
-        foreach ($words as $word) {
-            $word = \mb_strtolower($word, 'UTF-8');
-            if (\in_array($word, self::NAME_HINTS, strict: true) || \in_array(\preg_replace('/(?:es|s)$/', '', $word), self::NAME_HINTS, strict: true)) {
+        foreach (\explode('_', \mb_strtolower($name, 'UTF-8')) as $word) {
+            if (\in_array($word, self::NAME_HINTS, strict: true) || \in_array((string)\preg_replace('/(?:es|s)$/', '', $word), self::NAME_HINTS, strict: true)) {
                 return true;
             }
         }

@@ -68,16 +68,7 @@ final class SafeFilterOptionSniff implements Sniff
             return;
         }
 
-        // Allow `new \TwigFunction(...)` — skip a single leading separator,
-        // same reasoning as Strings\CallHelper::isFunctionCall().
-        if ($tokens[$class_name_ptr]['code'] === \T_NS_SEPARATOR) {
-            $class_name_ptr = $phpcsFile->findNext(\T_WHITESPACE, $class_name_ptr + 1, null, true);
-        }
-
-        if (
-            $class_name_ptr === false
-            || !\in_array($tokens[$class_name_ptr]['code'], [\T_STRING, \T_NAME_FULLY_QUALIFIED], strict: true)
-        ) {
+        if (!\in_array($tokens[$class_name_ptr]['code'], [\T_STRING, \T_NAME_FULLY_QUALIFIED], strict: true)) {
             return;
         }
 
@@ -88,20 +79,11 @@ final class SafeFilterOptionSniff implements Sniff
             return;
         }
 
-        // A following T_NS_SEPARATOR means this was actually `Some\TwigFunction`
-        // — a different, namespaced class. Bail.
-        $after_name = $phpcsFile->findNext(\T_WHITESPACE, $class_name_ptr + 1, null, true);
-        if (
-            $after_name !== false
-            && $tokens[$after_name]['code'] === \T_NS_SEPARATOR
-        ) {
-            return;
-        }
-
-        $open_parenthesis = $after_name;
+        $open_parenthesis = $phpcsFile->findNext(\T_WHITESPACE, $class_name_ptr + 1, null, true);
         if (
             $open_parenthesis === false
             || $tokens[$open_parenthesis]['code'] !== \T_OPEN_PARENTHESIS
+            || !isset($tokens[$open_parenthesis]['parenthesis_closer'])
         ) {
             return;
         }

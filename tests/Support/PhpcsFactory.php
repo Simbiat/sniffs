@@ -136,16 +136,20 @@ final class PhpcsFactory
      */
     public static function loadPhpcs(): void
     {
-        if (\class_exists(Config::class)) {
-            return;
+        if (!\class_exists(Config::class)) {
+            $path = \class_exists(InstalledVersions::class) ? InstalledVersions::getInstallPath('squizlabs/php_codesniffer') : null;
+            if ($path === null || !\is_file($path.'/autoload.php')) {
+                throw new \RuntimeException('Cannot find PHP_CodeSniffer. Install squizlabs/php_codesniffer with Composer.');
+            }
+
+            require_once $path.'/autoload.php';
         }
 
-        $path = \class_exists(InstalledVersions::class) ? InstalledVersions::getInstallPath('squizlabs/php_codesniffer') : null;
-        if ($path === null || !\is_file($path.'/autoload.php')) {
-            throw new \RuntimeException('Cannot find PHP_CodeSniffer. Install squizlabs/php_codesniffer with Composer.');
-        }
-
-        require_once $path.'/autoload.php';
+        // The token constants (T_STRING and so on) are defined when this class is loaded, and the values of its
+        // class constants (Tokens::EMPTY_TOKENS and so on) are calculated at the first use. PHP compiles
+        // a file in a different way when it sees them already. Doing both here gives the same compiled code
+        // in every test process, so code coverage data from different processes can be merged.
+        \count(Tokens::EMPTY_TOKENS);
     }
 
     /**
