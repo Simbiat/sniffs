@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Simbiat\Sniffs\Tests;
 
 use PHP_CodeSniffer\Files\File;
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Simbiat\Sniffs\Tests\Support\Environment;
@@ -117,6 +118,7 @@ abstract class SniffTestCase extends TestCase
         }
     }
 
+    #[CoversNothing]
     #[DataProvider('fixtures')]
     public function testFixtureIsValidPhp(string $fixture): void
     {
@@ -169,6 +171,7 @@ abstract class SniffTestCase extends TestCase
         }
     }
 
+    #[CoversNothing]
     public function testEveryDeclaredCodeIsCoveredByAFixture(): void
     {
         $seen = [];

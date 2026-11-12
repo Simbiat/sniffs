@@ -20,12 +20,6 @@ use Simbiat\Sniffs\Tests\Support\PhpcsFactory;
 #[CoversNothing]
 final class RulesetTest extends TestCase
 {
-    public static function setUpBeforeClass(): void
-    {
-        // Every sniff class implements a PHPCS interface, so PHPCS must be loadable before we check the classes.
-        PhpcsFactory::loadPhpcs();
-    }
-
     /**
      * @return array<string, array{string}> Sniff code => [code]
      */

@@ -14,12 +14,6 @@ use Simbiat\Sniffs\Tests\Support\PhpcsFactory;
 #[CoversClass(CallHelper::class)]
 final class CallHelperTest extends TestCase
 {
-    protected function setUp(): void
-    {
-        // Load PHPCS and its token constants before the helper classes are compiled (see PhpcsFactory::loadPhpcs()).
-        PhpcsFactory::loadPhpcs();
-    }
-
     /**
      * @return array<string, array{list<string>, bool}>
      */

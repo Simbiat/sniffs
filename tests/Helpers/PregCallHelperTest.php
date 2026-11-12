@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Simbiat\Sniffs\Tests\Helpers;
 
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
@@ -18,16 +19,11 @@ use Simbiat\Sniffs\Tests\Support\PhpcsFactory;
 #[UsesClass(RegexLiteralHelper::class)]
 final class PregCallHelperTest extends TestCase
 {
-    protected function setUp(): void
-    {
-        // Load PHPCS and its token constants before the helper classes are compiled (see PhpcsFactory::loadPhpcs()).
-        PhpcsFactory::loadPhpcs();
-    }
-
     /**
      * Every preg_* function of PHP takes a pattern, except these three.
      * If PHP adds a new one, this test fails, and tells you to add it to the list.
      */
+    #[CoversNothing]
     public function testFunctionListHasEveryPatternFunction(): void
     {
         $expected = \array_values(\array_diff(
