@@ -30,6 +30,7 @@ STRLEN($str); // @expect Simbiat.Strings.PreferMultibyte.PreferMultibyte
 \strlen($str); // @expect Simbiat.Strings.PreferMultibyte.PreferMultibyte
 strlen ($str); // @expect Simbiat.Strings.PreferMultibyte.PreferMultibyte
 strlen('literal'); // @expect Simbiat.Strings.PreferMultibyte.PreferMultibyte
+strlen(KEY); // @expect Simbiat.Strings.PreferMultibyte.PreferMultibyte
 strlen($this->name); // @expect Simbiat.Strings.PreferMultibyte.PreferMultibyte
 strlen(trim($str)); // @expect Simbiat.Strings.PreferMultibyte.PreferMultibyte Simbiat.Strings.PreferMultibyte.PreferMultibyte
 strtolower(\strtoupper($str)); // @expect Simbiat.Strings.PreferMultibyte.PreferMultibyte Simbiat.Strings.PreferMultibyte.PreferMultibyte

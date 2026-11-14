@@ -68,19 +68,27 @@ final class PregCallHelper
      */
     public static function findPatternToken(File $phpcsFile, int $functionNamePtr): ?int
     {
+        return self::findPatternAndComma($phpcsFile, $functionNamePtr)['pattern'] ?? null;
+    }
+
+    /**
+     * Same as {@see self::findPatternToken()}, but also gives the first comma after the pattern.
+     *
+     * @param File $phpcsFile
+     * @param int  $functionNamePtr
+     *
+     * @return array{pattern: int, comma: int}|null
+     */
+    public static function findPatternAndComma(File $phpcsFile, int $functionNamePtr): ?array
+    {
         $tokens = $phpcsFile->getTokens();
 
-        $open_parenthesis = $phpcsFile->findNext(\T_WHITESPACE, $functionNamePtr + 1, null, true);
-        if (
-            $open_parenthesis === false
-            || $tokens[$open_parenthesis]['code'] !== \T_OPEN_PARENTHESIS
-        ) {
+        $parentheses = CallHelper::findParentheses($phpcsFile, $functionNamePtr);
+        if ($parentheses === null) {
             return null;
         }
 
-        $closed_parenthesis = $tokens[$open_parenthesis]['parenthesis_closer'];
-
-        $pattern_ptr = $phpcsFile->findNext(\T_WHITESPACE, $open_parenthesis + 1, $closed_parenthesis, true);
+        $pattern_ptr = $phpcsFile->findNext(\T_WHITESPACE, $parentheses['open'] + 1, $parentheses['close'], true);
         if (
             $pattern_ptr === false
             || $tokens[$pattern_ptr]['code'] !== \T_CONSTANT_ENCAPSED_STRING
@@ -90,11 +98,12 @@ final class PregCallHelper
 
         // Require at least one more argument after the pattern, matching
         // the original rules' `$func$($pattern$, $arg$)` shape.
-        $comma = $phpcsFile->findNext(\T_COMMA, $pattern_ptr + 1, $closed_parenthesis);
+        // The search starts at the pattern itself: it is a string, never a comma.
+        $comma = $phpcsFile->findNext(\T_COMMA, $pattern_ptr, $parentheses['close']);
         if ($comma === false) {
             return null;
         }
 
-        return $pattern_ptr;
+        return ['pattern' => $pattern_ptr, 'comma' => $comma];
     }
 }

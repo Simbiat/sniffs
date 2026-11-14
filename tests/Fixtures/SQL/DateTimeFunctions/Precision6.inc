@@ -12,6 +12,8 @@ $sql = 'SELECT UTC_TIMESTAMP() FROM t'; // @expect Simbiat.SQL.DateTimeFunctions
 $sql = 'SELECT UTC_TIMESTAMP(6) FROM t'; // @expect Simbiat.SQL.DateTimeFunctions.PreferCurrent
 $sql = 'SELECT UTC_DATE() FROM t'; // @expect Simbiat.SQL.DateTimeFunctions.PreferCurrent
 $sql = 'CREATE TABLE t (created DATETIME NOT NULL)'; // @expect Simbiat.SQL.DateTimeFunctions.MissingPrecision
+// A correct call keeps its own spacing, and only the wrong call in the same string is changed.
+$sql = 'SELECT NOW( 6 ), CURTIME() FROM t'; // @expect Simbiat.SQL.DateTimeFunctions.MissingPrecision
 
 // === Already correct: must NOT be flagged ===
 $sql = 'SELECT NOW(6) FROM t';

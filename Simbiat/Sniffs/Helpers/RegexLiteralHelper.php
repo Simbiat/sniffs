@@ -30,7 +30,9 @@ final class RegexLiteralHelper
      */
     public static function appendFlag(string $tokenContent, string $flag): string
     {
-        return \mb_substr($tokenContent, 0, -1, 'UTF-8').$flag.\mb_substr($tokenContent, -1, encoding: 'UTF-8');
+        // The closing quote is one ASCII byte, so cutting by bytes is safe for valid UTF-8.
+        // phpcs:ignore Simbiat.Strings.PreferMultibyte -- The cut is at an ASCII character.
+        return \substr($tokenContent, 0, -1).$flag.\substr($tokenContent, -1);
     }
 
     /**
@@ -40,7 +42,7 @@ final class RegexLiteralHelper
      */
     public static function parse(string $tokenContent): ?array
     {
-        if (\mb_strlen($tokenContent, 'UTF-8') < 2) {
+        if ($tokenContent === '') {
             return null;
         }
 
@@ -54,13 +56,16 @@ final class RegexLiteralHelper
             return null;
         }
 
-        $inner = \mb_substr($tokenContent, 1, -1, 'UTF-8');
+        // The quotes are ASCII, and so is the delimiter in every pattern that PHP accepts here: byte functions give the same result.
+        // phpcs:ignore Simbiat.Strings.PreferMultibyte -- See above.
+        $inner = \substr($tokenContent, 1, -1);
         if ($inner === '') {
             return null;
         }
 
         $delimiter = $inner[0];
-        $last_delimiter = \mb_strrpos($inner, $delimiter, 0, 'UTF-8');
+        // phpcs:ignore Simbiat.Strings.PreferMultibyte -- See above.
+        $last_delimiter = \strrpos($inner, $delimiter);
         if (
             $last_delimiter === false
             || $last_delimiter <= 0
@@ -69,7 +74,7 @@ final class RegexLiteralHelper
         }
 
         return [
-            'flags' => \mb_substr($inner, $last_delimiter + 1, encoding: 'UTF-8'),
+            'flags' => \substr($inner, $last_delimiter + 1),
         ];
     }
 }

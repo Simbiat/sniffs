@@ -48,7 +48,9 @@ final class CallHelper
     public static function findCall(File $phpcsFile, int $stackPtr, array $functions): ?array
     {
         $tokens = $phpcsFile->getTokens();
-        $name = \mb_strtolower(\ltrim($tokens[$stackPtr]['content'], '\\'), 'UTF-8');
+        // PHP folds the case of function names for ASCII letters only, so `strtolower()` is the right function here, not `mb_strtolower()`.
+        // phpcs:ignore Simbiat.Strings.PreferMultibyte -- A function name is not text.
+        $name = \strtolower(\ltrim($tokens[$stackPtr]['content'], '\\'));
 
         $is_listed = \array_is_list($functions)
             ? \in_array($name, $functions, strict: true)
@@ -57,7 +59,28 @@ final class CallHelper
             return null;
         }
 
-        $open_parenthesis = $phpcsFile->findNext(\T_WHITESPACE, $stackPtr + 1, null, true);
+        $parentheses = self::findParentheses($phpcsFile, $stackPtr);
+        if ($parentheses === null) {
+            return null;
+        }
+
+        return ['name' => $name, 'open' => $parentheses['open'], 'close' => $parentheses['close']];
+    }
+
+    /**
+     * Find the parentheses that follow a name token. Whitespace and line breaks between them are skipped.
+     *
+     * @param File $phpcsFile
+     * @param int  $namePtr Pointer to the name token (a function name, or a class name after `new`).
+     *
+     * @return array{open: int, close: int}|null Null if the next token is not an opening parenthesis, or if the parenthesis is never closed.
+     */
+    public static function findParentheses(File $phpcsFile, int $namePtr): ?array
+    {
+        $tokens = $phpcsFile->getTokens();
+
+        $open_parenthesis = $phpcsFile->findNext(\T_WHITESPACE, $namePtr + 1, null, true);
+        // The type check is needed: a closing parenthesis also has `parenthesis_closer`, for example in `f(strlen)`.
         if (
             $open_parenthesis === false
             || $tokens[$open_parenthesis]['code'] !== \T_OPEN_PARENTHESIS
@@ -66,7 +89,7 @@ final class CallHelper
             return null;
         }
 
-        return ['name' => $name, 'open' => $open_parenthesis, 'close' => $tokens[$open_parenthesis]['parenthesis_closer']];
+        return ['open' => $open_parenthesis, 'close' => $tokens[$open_parenthesis]['parenthesis_closer']];
     }
 
     /**
@@ -74,7 +97,8 @@ final class CallHelper
      */
     public static function hasTrailingComma(File $phpcsFile, int $openParenthesis, int $closeParenthesis): bool
     {
-        $last = $phpcsFile->findPrevious(Tokens::EMPTY_TOKENS, $closeParenthesis - 1, $openParenthesis + 1, true);
+        // The search stops at the opening parenthesis at the latest: it is not an "empty" token.
+        $last = $phpcsFile->findPrevious(Tokens::EMPTY_TOKENS, $closeParenthesis - 1, $openParenthesis, true);
 
         return $last !== false && $phpcsFile->getTokens()[$last]['code'] === \T_COMMA;
     }
@@ -123,19 +147,20 @@ final class CallHelper
         $current = '';
         $arguments = [];
 
-        for ($iteration = $openParen + 1; $iteration < $closeParen; ++$iteration) {
-            $content = $tokens[$iteration]['content'];
+        // A slice of the tokens, not a counter: a broken bound can only make the slice wrong, never endless (an endless loop fills the memory and kills the test process).
+        foreach (\array_slice($tokens, $openParen + 1, $closeParen - $openParen - 1) as $token) {
+            $content = $token['content'];
 
-            if (\in_array($tokens[$iteration]['code'], [\T_OPEN_PARENTHESIS, \T_OPEN_SQUARE_BRACKET, \T_OPEN_SHORT_ARRAY, \T_OPEN_CURLY_BRACKET], strict: true)) {
+            if (\in_array($token['code'], [\T_OPEN_PARENTHESIS, \T_OPEN_SQUARE_BRACKET, \T_OPEN_SHORT_ARRAY, \T_OPEN_CURLY_BRACKET], strict: true)) {
                 ++$depth;
             }
 
-            if (\in_array($tokens[$iteration]['code'], [\T_CLOSE_PARENTHESIS, \T_CLOSE_SQUARE_BRACKET, \T_CLOSE_SHORT_ARRAY, \T_CLOSE_CURLY_BRACKET], strict: true)) {
+            if (\in_array($token['code'], [\T_CLOSE_PARENTHESIS, \T_CLOSE_SQUARE_BRACKET, \T_CLOSE_SHORT_ARRAY, \T_CLOSE_CURLY_BRACKET], strict: true)) {
                 --$depth;
             }
 
             if (
-                $tokens[$iteration]['code'] === \T_COMMA
+                $token['code'] === \T_COMMA
                 && $depth === 0
             ) {
                 $arguments[] = $current;

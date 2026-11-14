@@ -136,7 +136,6 @@ final class MultibyteEncodingSniff implements Sniff
 
         $param_name = self::ENCODING_PARAM_NAMES[$function_name] ?? 'encoding';
 
-        $phpcsFile->fixer->beginChangeset();
         // Named argument: always valid here regardless of how many
         // optional parameters sit between the last given argument and
         // the encoding slot, so this never needs to know the exact
@@ -145,8 +144,8 @@ final class MultibyteEncodingSniff implements Sniff
         $prefix = !CallHelper::hasTrailingComma($phpcsFile, $open_parenthesis, $close_parenthesis) && \count($params) > 0 && \mb_trim(\end($params), encoding: 'UTF-8') !== ''
             ? ', '
             : '';
+        // One edit only, so a changeset (an "all or nothing" group of edits) is not needed.
         $phpcsFile->fixer->addContentBefore($close_parenthesis, $prefix.$param_name.": 'UTF-8'");
-        $phpcsFile->fixer->endChangeset();
     }
 
     /**

@@ -8,6 +8,7 @@ $b = new TwigFilter('render', $callable, ['is_safe' => ['html']]); // @expect Si
 $e = new TwigFunction('render', $callable, ["is_safe" => ['html']]); // @expect Simbiat.Twig.SafeFilterOption.IsSafeUsed
 $f = new TwigFunction('render', $callable, ['needs_environment' => true, 'is_safe' => ['html']]); // @expect Simbiat.Twig.SafeFilterOption.IsSafeUsed
 $g = new TwigFunction('render', $callable, options: ['is_safe' => ['html']]); // @expect Simbiat.Twig.SafeFilterOption.IsSafeUsed
+$g2 = new TwigFunction('is_safe'); // @expect Simbiat.Twig.SafeFilterOption.IsSafeUsed
 $h = new TwigFunction( // @expect Simbiat.Twig.SafeFilterOption.IsSafeUsed
     'render',
     $callable,

@@ -130,6 +130,52 @@ final class CallHelperTest extends TestCase
     }
 
     /**
+     * Each case: code, the exact token content of the name, whether the parentheses are found.
+     *
+     * @return array<string, array{string, string, bool}>
+     */
+    public static function findParenthesesProvider(): array
+    {
+        return [
+            'parenthesis right after the name' => ['strlen($a);', 'strlen', true],
+            'no arguments' => ['strlen();', 'strlen', true],
+            'space before the parenthesis' => ['strlen ($a);', 'strlen', true],
+            'line break before the parenthesis' => ["strlen\n    (\$a);", 'strlen', true],
+            'nested parentheses' => ['strlen(f(g($a)));', 'strlen', true],
+            'no parenthesis' => ['$x = strlen;', 'strlen', false],
+            'another token after the name' => ['strlen[0];', 'strlen', false],
+            'a comment between the name and the parenthesis' => ['strlen /* c */ ($a);', 'strlen', false],
+            'the name is the last token' => ['strlen', 'strlen', false],
+            'the parenthesis is never closed' => ['strlen($a', 'strlen', false],
+            'a closing parenthesis after the name' => ['f(strlen);', 'strlen', false],
+        ];
+    }
+
+    /**
+     * The sniffs call this method directly, so the test calls it from outside of the class, too.
+     */
+    #[DataProvider('findParenthesesProvider')]
+    public function testFindParentheses(string $code, string $tokenContent, bool $expectFound): void
+    {
+        $file = PhpcsFactory::parseString('<?php '.$code);
+        $parentheses = CallHelper::findParentheses($file, self::tokenPointer($file, $tokenContent));
+
+        if (!$expectFound) {
+            self::assertNull($parentheses);
+
+            return;
+        }
+
+        self::assertNotNull($parentheses);
+        $tokens = $file->getTokens();
+        self::assertSame(\T_OPEN_PARENTHESIS, $tokens[$parentheses['open']]['code']);
+        self::assertSame(\T_CLOSE_PARENTHESIS, $tokens[$parentheses['close']]['code']);
+        self::assertSame($parentheses['close'], $tokens[$parentheses['open']]['parenthesis_closer']);
+        // The first parenthesis after the name, and the one that matches it: not a nested one.
+        self::assertSame($file->findNext(\T_OPEN_PARENTHESIS, 0), $parentheses['open']);
+    }
+
+    /**
      * @return array<string, array{string, bool}>
      */
     public static function trailingCommaProvider(): array

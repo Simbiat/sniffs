@@ -103,6 +103,42 @@ final class PregCallHelperTest extends TestCase
         ];
     }
 
+    /**
+     * @return array<string, array{string, int|null}> Code => distance from the pattern token to the comma
+     */
+    public static function commaProvider(): array
+    {
+        return [
+            'comma right after the pattern' => ["preg_match('/foo/', \$s)", 1],
+            'space before the comma' => ["preg_match('/foo/' , \$s)", 2],
+            'only the first comma counts' => ["preg_match('/foo/', \$s, \$matches)", 1],
+            'no comma' => ["preg_match('/foo/')", null],
+            'variable as the pattern' => ['preg_match($pattern, $s)', null],
+            'unclosed parenthesis' => ["preg_match('/foo/', \$s", null],
+        ];
+    }
+
+    #[DataProvider('commaProvider')]
+    public function testFindPatternAndComma(string $call, ?int $distance): void
+    {
+        $file = PhpcsFactory::parseString('<?php '.$call);
+        $name = $file->findNext(\T_STRING, 0);
+        self::assertNotFalse($name);
+
+        $result = PregCallHelper::findPatternAndComma($file, $name);
+
+        if ($distance === null) {
+            self::assertNull($result);
+
+            return;
+        }
+
+        self::assertNotNull($result);
+        self::assertSame($result['pattern'] + $distance, $result['comma']);
+        self::assertSame(\T_COMMA, $file->getTokens()[$result['comma']]['code']);
+        self::assertSame(\T_CONSTANT_ENCAPSED_STRING, $file->getTokens()[$result['pattern']]['code']);
+    }
+
     #[DataProvider('patternProvider')]
     public function testFindPatternToken(string $call, ?string $expectedContent): void
     {

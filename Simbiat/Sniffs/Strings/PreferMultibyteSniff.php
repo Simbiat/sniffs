@@ -167,10 +167,12 @@ final class PreferMultibyteSniff implements Sniff
 
         // Split `$rawBody`, `$user_key` or `$IV_BYTES` into words, and compare whole words only.
         // A substring match would also catch `$archive` (iv), `$monkey` (key) or `$crawler` (raw).
-        // The patterns are constant and the subject is a variable name, so preg_replace() cannot fail here.
-        $name = (string)\preg_replace('/(?<=[a-z0-9])(?=[A-Z])/', '_', \ltrim($tokens[$first_arg_ptr]['content'], '$'));
+        // The patterns are constant and the subject is a variable name, so preg_replace() cannot fail here. The fallback is for static analysis only.
+        $name = \preg_replace('/(?<=[a-z0-9])(?=[A-Z])/', '_', \ltrim($tokens[$first_arg_ptr]['content'], '$')) ?? '';
 
-        foreach (\explode('_', \mb_strtolower($name, 'UTF-8')) as $word) {
+        // The hints are ASCII words, so only ASCII letters need to change case: `strtolower()` is correct and `mb_strtolower()` is not needed.
+        // phpcs:ignore Simbiat.Strings.PreferMultibyte -- The compared words are ASCII.
+        foreach (\explode('_', \strtolower($name)) as $word) {
             if (\in_array($word, self::NAME_HINTS, strict: true) || \in_array((string)\preg_replace('/(?:es|s)$/', '', $word), self::NAME_HINTS, strict: true)) {
                 return true;
             }

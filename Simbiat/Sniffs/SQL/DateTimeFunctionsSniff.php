@@ -7,6 +7,8 @@ namespace Simbiat\Sniffs\SQL;
 use PHP_CodeSniffer\Files\File;
 use PHP_CodeSniffer\Sniffs\Sniff;
 
+// phpcs:disable Simbiat.Strings.PreferMultibyte -- PCRE offsets and string indexes are in bytes, so byte functions are the correct ones in this file.
+
 /**
  * Scans string literals that look like SQL for two conventions, both
  * auto-fixable:
@@ -43,7 +45,7 @@ final class DateTimeFunctionsSniff implements Sniff
     /**
      * Statements that need explicit precision.
      */
-    private const string PRECISION_DETECT_PATTERN = '/\b(CURRENT_TIMESTAMP|CURRENT_TIME|UTC_TIMESTAMP|UTC_TIME|SYSDATE|NOW|CURTIME|TIMESTAMP|DATETIME)\b(?!\s*\(\s*%d\s*\))/iur';
+    private const string PRECISION_DETECT_PATTERN = '/\b(?:CURRENT_TIMESTAMP|CURRENT_TIME|UTC_TIMESTAMP|UTC_TIME|SYSDATE|NOW|CURTIME|TIMESTAMP|DATETIME)\b(?!\s*\(\s*%d\s*\))/iur';
 
     /**
      * Fix pattern - captures any existing (digit) clause so it can be normalized rather than appending a second one.
@@ -131,8 +133,9 @@ final class DateTimeFunctionsSniff implements Sniff
         if (!$is_heredoc) {
             $quote = $pieces[0][0];
             $last_index = \count($pieces) - 1;
-            $pieces[0] = \mb_substr($pieces[0], 1, encoding: 'UTF-8');
-            $pieces[$last_index] = \mb_substr($pieces[$last_index], 0, -1, 'UTF-8');
+            // The quotes are single ASCII bytes.
+            $pieces[0] = \substr($pieces[0], 1);
+            $pieces[$last_index] = \substr($pieces[$last_index], 0, -1);
         }
 
         $body = \implode('', $pieces);
@@ -152,14 +155,16 @@ final class DateTimeFunctionsSniff implements Sniff
 
         $wants_utc_fix = \preg_match(self::UTC_DETECT_PATTERN, $masked, $utc_match) === 1;
         if ($wants_utc_fix) {
+            // The pattern has the `r` flag, so only ASCII letters can match the keyword: `strtoupper()` is enough.
+            $utc_suffix = \strtoupper($utc_match[2]);
             $fix = $phpcsFile->addFixableWarning(
                 'Use CURRENT_%s instead of %s%s.',
                 $stackPtr,
                 'PreferCurrent',
-                [\mb_strtoupper($utc_match[2], 'UTF-8'), $utc_match[1], \mb_strtoupper($utc_match[2], 'UTF-8')],
+                [$utc_suffix, $utc_match[1], $utc_suffix],
             );
             if ($fix) {
-                $edits = \array_merge($edits, self::collectUtcEdits($masked));
+                $edits = self::collectUtcEdits($masked);
             }
         }
 
@@ -169,15 +174,11 @@ final class DateTimeFunctionsSniff implements Sniff
                 '%s should explicitly state (%d) fractional-second precision.',
                 $stackPtr,
                 'MissingPrecision',
-                [\mb_strtoupper($precision_match[1], 'UTF-8'), $this->normalisedPrecision()],
+                [\strtoupper($precision_match[0]), $this->normalisedPrecision()],
             );
             if ($fix) {
                 $edits = \array_merge($edits, $this->collectPrecisionEdits($masked));
             }
-        }
-
-        if ($edits === []) {
-            return;
         }
 
         $edits = self::mergeOverlappingEdits($edits);
@@ -192,18 +193,19 @@ final class DateTimeFunctionsSniff implements Sniff
         // the fragment count - is unchanged; if that ever stops being true
         // (e.g. an unexpected edge case), bail out instead of risking a
         // mis-split that corrupts the file.
-        $new_pieces = \preg_split('/(?<=\n)/', $body, -1, \PREG_SPLIT_NO_EMPTY) ?: [$body];
-        if (\count($new_pieces) !== \count($fragment_parts)) {
+        $new_pieces = \preg_split('/(?<=\n)/', $body, -1, \PREG_SPLIT_NO_EMPTY);
+        if ($new_pieces === false || \count($new_pieces) !== \count($fragment_parts)) {
             return;
         }
 
         if (!$is_heredoc) {
             $last_index = \count($new_pieces) - 1;
-            /* @noinspection OffsetOperationsInspection False-positive, due to `preg_split` being able to return `false`, but that `false` is guarded against already */
             $new_pieces[0] = $quote.$new_pieces[0];
             $new_pieces[$last_index] .= $quote;
         }
 
+        // The changeset makes the edits of all the fragments "all or nothing". It only matters if another sniff changed one of the tokens in the same pass.
+        // @infection-ignore-all
         $phpcsFile->fixer->beginChangeset();
         foreach ($fragment_parts as $iteration => $ptr) {
             if ($tokens[$ptr]['content'] !== $new_pieces[$iteration]) {
@@ -238,19 +240,24 @@ final class DateTimeFunctionsSniff implements Sniff
     }
 
     /**
+     * @internal Public only, so that a test can call it directly.
+     *
      * @param array<int, mixed> $tokens
      * @param int               $startPtr
      * @param bool              $isHeredoc
      *
      * @return list<int>
      */
-    private static function collectFragments(array $tokens, int $startPtr, bool $isHeredoc): array
+    public static function collectFragments(array $tokens, int $startPtr, bool $isHeredoc): array
     {
         $ptrs = [$startPtr];
 
         if ($isHeredoc) {
             $ptr = $startPtr;
-            while (($tokens[$ptr + 1]['code'] ?? null) === \T_HEREDOC) {
+            while (
+                \array_key_exists($ptr + 1, $tokens)
+                && $tokens[$ptr + 1]['code'] === \T_HEREDOC
+            ) {
                 ++$ptr;
                 $ptrs[] = $ptr;
             }
@@ -263,7 +270,7 @@ final class DateTimeFunctionsSniff implements Sniff
 
         if (self::endsWithUnescapedQuote($tokens[$startPtr]['content'], $quote_char, isFirstFragment: true)) {
             // single-fragment, complete string
-            return $ptrs;
+            return [$startPtr];
         }
 
         $ptr = $startPtr;
@@ -285,7 +292,7 @@ final class DateTimeFunctionsSniff implements Sniff
     /**
      * @param string $masked
      *
-     * @return list<array{type: string, offset: int, length: int, replacement: string, keyword: string, target: string}>
+     * @return list<array{type: string, offset: int, length: int, replacement: string, target: string}>
      */
     private function collectPrecisionEdits(string $masked): array
     {
@@ -305,8 +312,7 @@ final class DateTimeFunctionsSniff implements Sniff
             $keyword = $matches[1][$iteration][0];
 
             $edits[] = [
-                'keyword' => $keyword,
-                'length' => \mb_strlen($full_match, 'UTF-8'),
+                'length' => \strlen($full_match),
                 'offset' => $offset,
                 'replacement' => $keyword.'('.$target.')',
                 'target' => $target,
@@ -338,7 +344,7 @@ final class DateTimeFunctionsSniff implements Sniff
                 : 'current_';
 
             $edits[] = [
-                'length' => \mb_strlen($full_match, 'UTF-8'),
+                'length' => \strlen($full_match),
                 'offset' => $offset,
                 'replacement' => $replacement_prefix.$suffix,
                 'type' => 'utc',
@@ -351,8 +357,11 @@ final class DateTimeFunctionsSniff implements Sniff
     /**
      * True if $content ends with $quoteChar preceded by an even number of
      * backslashes (i.e. the quote is a real delimiter, not escaped).
-     * $strippingLeadingQuote: whether $content still has its own opening
-     * quote at position 0 (only true for a single, self-contained fragment).
+     * $isFirstFragment: whether $content still has its own opening quote at
+     * position 0. That quote cannot be the closing quote, too, so it is not
+     * a candidate for the end of the string.
+     *
+     * @internal Public only, so that a test can call it directly.
      *
      * @param string $content
      * @param string $quoteChar
@@ -360,27 +369,18 @@ final class DateTimeFunctionsSniff implements Sniff
      *
      * @return bool
      */
-    private static function endsWithUnescapedQuote(string $content, string $quoteChar, bool $isFirstFragment): bool
+    public static function endsWithUnescapedQuote(string $content, string $quoteChar, bool $isFirstFragment): bool
     {
-        $min_length = $isFirstFragment
-            ? 2
-            : 1;
-        if (
-            \mb_strlen($content, 'UTF-8') < $min_length
-            || !\str_ends_with($content, $quoteChar)
-        ) {
+        // The quotes and the backslashes are single ASCII bytes, so byte functions are correct here.
+        $candidate = $isFirstFragment
+            ? \substr($content, 1)
+            : $content;
+        if (!\str_ends_with($candidate, $quoteChar)) {
             return false;
         }
 
-        $backslashes = 0;
-        $iteration = \mb_strlen($content, 'UTF-8') - 2;
-        while (
-            $iteration >= 0
-            && $content[$iteration] === '\\'
-        ) {
-            ++$backslashes;
-            --$iteration;
-        }
+        // Count the backslashes before the final quote: the reversed string starts with the quote, so the count starts after it.
+        $backslashes = \strspn(\strrev($candidate), '\\', 1);
 
         return $backslashes % 2 === 0;
     }
@@ -388,13 +388,15 @@ final class DateTimeFunctionsSniff implements Sniff
     /**
      * Is it a start of the fragment.
      *
+     * @internal Public only, so that a test can call it directly.
+     *
      * @param array<int, mixed> $tokens
      * @param int               $stackPtr
      * @param bool              $isHeredoc
      *
      * @return bool
      */
-    private static function isFragmentStart(array $tokens, int $stackPtr, bool $isHeredoc): bool
+    public static function isFragmentStart(array $tokens, int $stackPtr, bool $isHeredoc): bool
     {
         if ($isHeredoc) {
             $prev_code = $tokens[$stackPtr - 1]['code'] ?? null;
@@ -417,11 +419,13 @@ final class DateTimeFunctionsSniff implements Sniff
      * one edit here instead - the precision edit's target digit, applied
      * to the UTC edit's already-corrected keyword.
      *
-     * @param list<array{type: string, offset: int, length: int, replacement: string, keyword?: string, target?: string}> $edits
+     * @internal Public only, so that a test can call it directly.
+     *
+     * @param list<array{type: string, offset: int, length: int, replacement: string, target?: string}> $edits
      *
      * @return list<array{type: string, offset: int, length: int, replacement: string}>
      */
-    private static function mergeOverlappingEdits(array $edits): array
+    public static function mergeOverlappingEdits(array $edits): array
     {
         $by_offset = [];
         foreach ($edits as $edit) {

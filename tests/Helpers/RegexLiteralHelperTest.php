@@ -33,6 +33,7 @@ final class RegexLiteralHelperTest extends TestCase
             'one character in the quotes' => ["'/'", null],
             'no closing delimiter' => ["'/foo'", null],
             'not a quoted string' => ['/foo/', null],
+            'not a quoted string, but the body looks like a pattern' => ['x/a/ix', null],
             'only one character' => ["'", null],
             'empty input' => ['', null],
             // Known limitation: bracket-style delimiters need a different closing character.

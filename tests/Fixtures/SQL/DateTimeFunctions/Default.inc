@@ -107,3 +107,17 @@ $sql = 'SELECT utc_timestamps FROM t';
 $sql = <<<'SQL'
     SELECT NOW()
     SQL;
+
+// === The case of the UTC_ prefix decides the case of CURRENT_, the case of the keyword is kept ===
+$sql = 'SELECT UTC_date, utc_DATE FROM t'; // @expect Simbiat.SQL.DateTimeFunctions.PreferCurrent
+
+// === Several wrong calls in one string ===
+$sql = 'SELECT NOW(), CURTIME() FROM t'; // @expect Simbiat.SQL.DateTimeFunctions.MissingPrecision
+
+// === Heredoc: a call on a later line is fixed, too ===
+// @expect+2 Simbiat.SQL.DateTimeFunctions.MissingPrecision
+$sql = <<<SQL
+    SELECT id
+    , NOW()
+    FROM t
+    SQL;

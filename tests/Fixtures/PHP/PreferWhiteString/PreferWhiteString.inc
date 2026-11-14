@@ -23,6 +23,10 @@ if (preg_match('/^\s*$/u', $value) === 1) { // @expect Simbiat.PHP.PreferWhiteSt
 // === Every allowed flag is accepted ===
 $i = preg_match('/^\s*$/imsxADSUXJur', $key) === 1; // @expect Simbiat.PHP.PreferWhiteString.PreferWhiteString
 
+// === No whitespace between the tokens ===
+$y = preg_match('/^\s*$/u',$key)===1; // @expect Simbiat.PHP.PreferWhiteString.PreferWhiteString
+$z = preg_match('/^\s*$/u',$key,$matches)!==1; // @expect Simbiat.PHP.PreferWhiteString.PreferWhiteString
+
 // === /^\s+$/ is accepted as the pattern core too (see the docblock of the sniff) ===
 $x = preg_match('/^\s+$/u', $key) === 1; // @expect Simbiat.PHP.PreferWhiteString.PreferWhiteString
 
@@ -32,6 +36,9 @@ $k = preg_match('/^\s*$/n', $key) === 1;
 $l = preg_match('/\s/', $key) === 1;
 $m = preg_match('/^\s*/', $key) === 1;
 $n = preg_match($pattern, $key) === 1;
+
+// === Another preg function: must NOT be flagged ===
+$n2 = preg_replace('/^\s*$/', ' ', $key) === 1;
 
 // === Different comparison: must NOT be flagged ===
 $o = preg_match('/^\s*$/', $key) == 1;

@@ -55,6 +55,9 @@ final class ExitCodeSniff implements Sniff
     {
         $tokens = $phpcsFile->getTokens();
         $next = $phpcsFile->findNext(\T_WHITESPACE, $stackPtr + 1, null, true);
+        // The token is `exit` or `die` in any ASCII case, so `strtolower()` is correct and `mb_strtolower()` is not needed.
+        // phpcs:ignore Simbiat.Strings.PreferMultibyte -- A keyword is not text.
+        $suggestion = \strtolower($tokens[$stackPtr]['content']);
 
         // Bare `exit;` / `die;` — no parentheses at all.
         if (
@@ -65,7 +68,7 @@ final class ExitCodeSniff implements Sniff
                 '%s should be called with an explicit exit code, e.g. %s(0).',
                 $stackPtr,
                 'MissingCode',
-                [$tokens[$stackPtr]['content'], \mb_strtolower($tokens[$stackPtr]['content'], 'UTF-8')],
+                [$tokens[$stackPtr]['content'], $suggestion],
             );
 
             if ($fix) {
@@ -78,18 +81,9 @@ final class ExitCodeSniff implements Sniff
         $open_parenthesis = $next;
         $close_parenthesis = $tokens[$open_parenthesis]['parenthesis_closer'];
 
-        // Anything between the parens (even just whitespace/comments) counts
-        // as "has an argument" — only a genuinely empty exit()/die() is flagged.
-        $has_argument = false;
-        for ($iteration = $open_parenthesis + 1; $iteration < $close_parenthesis; ++$iteration) {
-            if ($tokens[$iteration]['code'] !== \T_WHITESPACE) {
-                $has_argument = true;
-
-                break;
-            }
-        }
-
-        if ($has_argument) {
+        // Anything between the parens except whitespace (so a comment counts, too)
+        // is "an argument" — only an empty exit()/die() is flagged.
+        if ($phpcsFile->findNext(\T_WHITESPACE, $open_parenthesis + 1, $close_parenthesis, true) !== false) {
             return;
         }
 
@@ -97,16 +91,15 @@ final class ExitCodeSniff implements Sniff
             '%s() should be called with an explicit exit code, e.g. %s(0).',
             $stackPtr,
             'MissingCode',
-            [$tokens[$stackPtr]['content'], \mb_strtolower($tokens[$stackPtr]['content'], 'UTF-8')],
+            [$tokens[$stackPtr]['content'], $suggestion],
         );
 
         if (!$fix) {
             return;
         }
 
-        $phpcsFile->fixer->beginChangeset();
+        // One edit only, so a changeset (an "all or nothing" group of edits) is not needed.
         $phpcsFile->fixer->addContent($open_parenthesis, '0');
-        $phpcsFile->fixer->endChangeset();
     }
 
     /**

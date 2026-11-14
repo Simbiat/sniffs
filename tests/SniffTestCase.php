@@ -25,6 +25,9 @@ use Simbiat\Sniffs\Tests\Support\PhpcsFactory;
  *                                         go on the line itself.
  *  - `// @expect+2 Code.One`              The same, but N lines below (here: 2). `@expect-next` is `@expect+1`.
  *  - `// @property name=value`            Set a sniff property for the whole fixture.
+ *  - `// @max-passes N`                  The fixer may need up to N passes for this fixture (default: 2, that is
+ *                                         one pass that fixes everything, and one pass that finds nothing to fix).
+ *                                         A higher value is for fixtures that really need several passes.
  *  - `// @known-issue Text`               The fixture describes DESIRED behavior that the sniff does not
  *                                         have yet (or a wrong fixer output). `@expect` and `.fixed` hold the
  *                                         CORRECT result. While the sniff is wrong, the tests are reported as
@@ -113,6 +116,44 @@ abstract class SniffTestCase extends TestCase
                     $codes[$code],
                     $message['fixable'],
                     'Line '.$line.': "fixable" flag is wrong for '.$message['source'],
+                );
+            }
+        }
+    }
+
+    /**
+     * `Fixer::replaceToken()` and the other fixer methods do not check if the fixer is enabled, so a sniff that
+     * forgets to check the result of `addFixableWarning()` changes the fixer buffer in the check pass. `fixFile()` starts
+     * with that buffer, so the final output is the same, and the other tests do not see the mistake.
+     *
+     * @throws \JsonException
+     */
+    #[DataProvider('fixtures')]
+    public function testCheckPassDoesNotChangeTheFixerBuffer(string $fixture): void
+    {
+        $file = $this->check($fixture);
+
+        self::assertSame(
+            self::read($fixture),
+            $file->fixer->getContents(),
+            'The check pass changed the fixer buffer of '.\basename($fixture).': a fix is made without checking the result of addFixableWarning().',
+        );
+    }
+
+    /**
+     * A message with `%s` or `%d` still in it had no data: the arguments of the message are missing or wrong.
+     *
+     * @throws \JsonException
+     */
+    #[DataProvider('fixtures')]
+    public function testMessagesHaveNoUnreplacedPlaceholders(string $fixture): void
+    {
+        foreach (self::messages($this->check($fixture)) as $line => $messages) {
+            foreach ($messages as $message) {
+                self::assertDoesNotMatchRegularExpression(
+                    '~%(?:\d+\$)?[sd]~',
+                    $message['message'],
+                    'Line '.$line.' of '.\basename($fixture).' has a message with a placeholder that was not replaced.',
                 );
             }
         }
@@ -211,6 +252,14 @@ abstract class SniffTestCase extends TestCase
         $converged = $file->fixer->fixFile();
         if ($had_fixable && self::knownIssue($fixture) === null) {
             self::assertTrue($converged, 'The fixer did not finish for '.\basename($fixture).' (conflict or too many loops).');
+
+            // If a sniff makes only a part of its edits in a pass, the next pass makes the rest, and the final output is
+            // the same. The number of passes shows it.
+            self::assertLessThanOrEqual(
+                self::maxPasses($fixture),
+                $file->fixer->loops,
+                'The fixer needed more passes than expected for '.\basename($fixture).'. If this is right, add `// @max-passes N` to the fixture.',
+            );
         }
 
         return [
@@ -317,6 +366,17 @@ abstract class SniffTestCase extends TestCase
         \ksort($result);
 
         return $result;
+    }
+
+    private static function maxPasses(string $fixture): int
+    {
+        foreach (self::lines($fixture) as $text) {
+            if (\preg_match('~^\s*//\s*@max-passes\s+(\d+)\s*$~', $text, $match) === 1) {
+                return (int) $match[1];
+            }
+        }
+
+        return 2;
     }
 
     private static function knownIssue(string $fixture): ?string

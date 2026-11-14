@@ -6,6 +6,7 @@ namespace Simbiat\Sniffs\Twig;
 
 use PHP_CodeSniffer\Files\File;
 use PHP_CodeSniffer\Sniffs\Sniff;
+use Simbiat\Sniffs\Helpers\CallHelper;
 
 /**
  * Flags `new TwigFunction(..., ['is_safe' => ...])`: a reminder to double-check
@@ -64,11 +65,9 @@ final class SafeFilterOptionSniff implements Sniff
         $tokens = $phpcsFile->getTokens();
 
         $class_name_ptr = $phpcsFile->findNext(\T_WHITESPACE, $stackPtr + 1, null, true);
+        // `$tokens[false]` is the first token (`<?php`), which is never a class name: without this check, the code below returns anyway.
+        // @infection-ignore-all
         if ($class_name_ptr === false) {
-            return;
-        }
-
-        if (!\in_array($tokens[$class_name_ptr]['code'], [\T_STRING, \T_NAME_FULLY_QUALIFIED], strict: true)) {
             return;
         }
 
@@ -79,21 +78,20 @@ final class SafeFilterOptionSniff implements Sniff
             return;
         }
 
-        $open_parenthesis = $phpcsFile->findNext(\T_WHITESPACE, $class_name_ptr + 1, null, true);
-        if (
-            $open_parenthesis === false
-            || $tokens[$open_parenthesis]['code'] !== \T_OPEN_PARENTHESIS
-            || !isset($tokens[$open_parenthesis]['parenthesis_closer'])
-        ) {
+        $parentheses = CallHelper::findParentheses($phpcsFile, $class_name_ptr);
+        if ($parentheses === null) {
             return;
         }
 
-        $close_parenthesis = $tokens[$open_parenthesis]['parenthesis_closer'];
+        ['open' => $open_parenthesis, 'close' => $close_parenthesis] = $parentheses;
 
-        for ($iteration = $open_parenthesis + 1; $iteration < $close_parenthesis; ++$iteration) {
+        // The tokens from the opening parenthesis up to, but not including, the closing one. Neither of them is a string.
+        // The loop goes over a slice, not over a counter: a broken counter makes an endless loop, which fills the memory and kills the test process.
+        $length = $close_parenthesis - $open_parenthesis;
+        foreach (\array_slice($tokens, $open_parenthesis, $length) as $token) {
             if (
-                $tokens[$iteration]['code'] === \T_CONSTANT_ENCAPSED_STRING
-                && \mb_trim($tokens[$iteration]['content'], "'\"", 'UTF-8') === 'is_safe'
+                $token['code'] === \T_CONSTANT_ENCAPSED_STRING
+                && \mb_trim($token['content'], "'\"", 'UTF-8') === 'is_safe'
             ) {
                 $phpcsFile->addWarning(
                     "'is_safe' on %s bypasses Twig's auto-escaping — confirm the callable's output is actually sanitised.",

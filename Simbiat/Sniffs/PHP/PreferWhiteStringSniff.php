@@ -7,6 +7,7 @@ namespace Simbiat\Sniffs\PHP;
 use PHP_CodeSniffer\Files\File;
 use PHP_CodeSniffer\Sniffs\Sniff;
 use Simbiat\Sniffs\Helpers\CallHelper;
+use Simbiat\Sniffs\Helpers\PregCallHelper;
 use Simbiat\StringHelpers\Sanitize;
 
 /**
@@ -70,50 +71,31 @@ final class PreferWhiteStringSniff implements Sniff
     {
         $tokens = $phpcsFile->getTokens();
 
-        // Strip the leading backslash of T_NAME_FULLY_QUALIFIED.
-        if (\mb_strtolower(\ltrim($tokens[$stackPtr]['content'], '\\'), 'UTF-8') !== 'preg_match') {
+        // Checks the function name (without the leading backslash of T_NAME_FULLY_QUALIFIED), that it is a call of the global function, and the parentheses.
+        $call = CallHelper::findCall($phpcsFile, $stackPtr, ['preg_match']);
+        if ($call === null) {
             return;
         }
 
-        if (!CallHelper::isFunctionCall($phpcsFile, $stackPtr)) {
+        // A literal pattern, and a second argument (the subject) must be present.
+        $arguments = PregCallHelper::findPatternAndComma($phpcsFile, $stackPtr);
+        if ($arguments === null) {
             return;
         }
 
-        $open_parenthesis = $phpcsFile->findNext(\T_WHITESPACE, $stackPtr + 1, null, true);
-        if (
-            $open_parenthesis === false
-            || $tokens[$open_parenthesis]['code'] !== \T_OPEN_PARENTHESIS
-        ) {
+        if (!self::isWhitespaceOnlyPattern($tokens[$arguments['pattern']]['content'])) {
             return;
         }
 
-        $close_parenthesis = $tokens[$open_parenthesis]['parenthesis_closer'];
-
-        $pattern_ptr = $phpcsFile->findNext(\T_WHITESPACE, $open_parenthesis + 1, $close_parenthesis, true);
-        if (
-            $pattern_ptr === false
-            || $tokens[$pattern_ptr]['code'] !== \T_CONSTANT_ENCAPSED_STRING
-        ) {
-            return;
-        }
-
-        $pattern_content = $tokens[$pattern_ptr]['content'];
-        if (!self::isWhitespaceOnlyPattern($pattern_content)) {
-            return;
-        }
-
-        // Second argument ($keep - the subject variable) must be present.
-        $comma = $phpcsFile->findNext(\T_COMMA, $pattern_ptr + 1, $close_parenthesis);
-        if ($comma === false) {
-            return;
-        }
-
-        $subject_ptr = $phpcsFile->findNext(\T_WHITESPACE, $comma + 1, $close_parenthesis, true);
+        $close_parenthesis = $call['close'];
+        $subject_ptr = $phpcsFile->findNext(\T_WHITESPACE, $arguments['comma'] + 1, $close_parenthesis, true);
         if ($subject_ptr === false) {
             return;
         }
 
-        $subject_end = $phpcsFile->findNext([\T_COMMA], $subject_ptr + 1, $close_parenthesis);
+        // The subject ends at the next comma (the `$matches` argument follows), or at the closing parenthesis.
+        // The search starts at the subject itself: its first token is never a comma.
+        $subject_end = $phpcsFile->findNext(\T_COMMA, $subject_ptr, $close_parenthesis);
         $subject_end = $subject_end === false
             ? $close_parenthesis
             : $subject_end;
@@ -129,9 +111,9 @@ final class PreferWhiteStringSniff implements Sniff
         }
 
         $one_ptr = $phpcsFile->findNext(\T_WHITESPACE, $after_call + 1, null, true);
+        // Only the integer literal `1` has the content `1`, so the content check is enough, and the code is not checked.
         if (
             $one_ptr === false
-            || $tokens[$one_ptr]['code'] !== \T_LNUMBER
             || $tokens[$one_ptr]['content'] !== '1'
         ) {
             return;
@@ -183,16 +165,19 @@ final class PreferWhiteStringSniff implements Sniff
      */
     private static function isWhitespaceOnlyPattern(string $content): bool
     {
-        // strip the surrounding quote char
-        $inner = \mb_substr($content, 1, -1, 'UTF-8');
+        // Strip the surrounding quote char. The quotes are ASCII, and so is the rest of what is compared below.
+        // phpcs:ignore Simbiat.Strings.PreferMultibyte -- See above.
+        $inner = \substr($content, 1, -1);
         $core = \array_find(['/^\s*$/', '/^\s+$/'], static fn($candidate): bool => \str_starts_with($inner, $candidate));
 
         if ($core === null) {
             return false;
         }
 
-        $flags = \mb_substr($inner, \mb_strlen($core, 'UTF-8'), encoding: 'UTF-8');
+        // phpcs:ignore Simbiat.Strings.PreferMultibyte -- See above.
+        $flags = \substr($inner, \strlen($core));
 
-        return $flags === '' || \preg_match('/^['.\preg_quote(self::ALLOWED_FLAGS, '/').']+$/u', $flags) === 1;
+        // Every character of the flags must be one of the allowed flags. An empty string means "no flags", which is fine.
+        return \strspn($flags, self::ALLOWED_FLAGS) === \strlen($flags);
     }
 }
